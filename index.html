@@ -779,8 +779,9 @@ async function refreshCloud(silent){
 }
 function authScreen(html){$('#aname').textContent=AC.NOMBRE||'Restaurante Sul';$('#authBody').innerHTML=html;$('#auth').hidden=false;$('#app').hidden=true}
 function showLogin(msg='',mode='in'){
-  authScreen(`<form id="authForm"><label>Correo<input type="email" name="email" required autocomplete="username"></label><label>Contraseña${mode==='up'?' (mínimo 8 caracteres)':''}<input type="password" name="pass" required minlength="${mode==='up'?8:1}" autocomplete="${mode==='up'?'new-password':'current-password'}"></label><div class="err" id="aerr">${esc(msg)}</div><button class="btn">${mode==='up'?'Crear cuenta':'Entrar'}</button></form><p class="hint" style="margin:8px 0 0">${mode==='up'?'¿Ya tienes cuenta? <a href="#" id="swAuth">Entrar</a>':'¿Primera vez? <a href="#" id="swAuth">Crear cuenta</a>. Tu acceso lo aprueba el dueño.'}</p>`);
+  authScreen(`<form id="authForm"><label>Correo<input type="email" name="email" required autocomplete="username"></label><label>Contraseña${mode==='up'?' (mínimo 8 caracteres)':''}<input type="password" name="pass" required minlength="${mode==='up'?8:1}" autocomplete="${mode==='up'?'new-password':'current-password'}"></label><div class="err" id="aerr">${esc(msg)}</div><button class="btn">${mode==='up'?'Crear cuenta':'Entrar'}</button></form><p class="hint" style="margin:10px 0 0;text-align:center">o</p><button class="btn sec" type="button" id="gBtn" style="width:100%">Continuar con Google</button><p class="hint" style="margin:8px 0 0">${mode==='up'?'¿Ya tienes cuenta? <a href="#" id="swAuth">Entrar</a>':'¿Primera vez? <a href="#" id="swAuth">Crear cuenta</a>. Tu acceso lo aprueba el dueño.'}</p>`);
   $('#swAuth').onclick=e=>{e.preventDefault();showLogin('',mode==='up'?'in':'up')};
+  $('#gBtn').onclick=async()=>{const {error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}});if(error)$('#aerr').textContent=error.message};
   $('#authForm').onsubmit=async e=>{
     e.preventDefault();const f=e.target,b=f.querySelector('button');b.disabled=true;
     const cred={email:f.email.value.trim(),password:f.pass.value};
