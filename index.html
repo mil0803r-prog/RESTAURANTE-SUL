@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Control Financiero · Restaurante Sul</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -141,6 +141,8 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 </div>
 <div id="scrim" data-act="menu"></div>
 <button id="fab" data-act="quick" aria-label="Registro rápido"></button>
+<button id="fab2" data-act="ai" aria-label="Asistente"></button>
+<aside id="ai" hidden aria-label="Asistente financiero"><div class="ai-head"><span>Asistente<small>Pregúntale a tus números</small></span><button class="tbtn" data-act="aiClose" aria-label="Cerrar" style="width:36px;height:36px">✕</button></div><div id="aiMsgs"></div><div id="aiChips"></div><form id="aiForm" autocomplete="off"><input id="aiIn" type="text" maxlength="500" placeholder="Escribe tu pregunta…" aria-label="Pregunta"><button aria-label="Enviar" id="aiSend"></button></form></aside>
 <div id="auth" hidden><div class="box"><div class="logo" style="padding:0"><span id="aname">Restaurante Sul</span><small>Control financiero</small></div><div id="authBody"></div></div></div>
 <dialog id="dlg"><div class="modal" id="dlgBody"></div></dialog>
 <div id="toast" role="status"></div>
@@ -217,7 +219,47 @@ form.f input,form.f select,.modal input,.modal select,.fl input,.fl select{paddi
   #fab span{display:none}
   .modal form.two{grid-template-columns:1fr}
 }
-@media print{#top,#fab{display:none!important}}
+html,body{max-width:100%;overflow-x:hidden;-webkit-text-size-adjust:100%}
+body{overscroll-behavior-y:none}
+.tw{-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+svg{max-width:100%;height:auto}
+#fab2{position:fixed;right:210px;bottom:24px;z-index:40;border:1px solid var(--line);border-radius:999px;padding:14px 20px;background:var(--card);color:var(--ink);font-weight:700;font-size:15px;box-shadow:0 8px 24px rgba(0,0,0,.12);cursor:pointer;display:flex;gap:8px;align-items:center}
+#fab2 svg{color:var(--brand)}
+#fab2[hidden],#fab[hidden]{display:none}
+#ai{position:fixed;right:24px;bottom:90px;width:390px;max-width:calc(100vw - 32px);height:min(580px,calc(100vh - 130px));background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.25);z-index:70;display:flex;flex-direction:column;overflow:hidden}
+#ai[hidden]{display:none}
+.ai-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);font-weight:750}
+.ai-head small{display:block;font-weight:500;color:var(--mute);font-size:12px}
+#aiMsgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;overscroll-behavior:contain}
+.msg{max-width:88%;padding:10px 13px;border-radius:14px;font-size:14.5px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.u{align-self:flex-end;background:var(--brand);color:#fff;border-bottom-right-radius:4px}
+.msg.a{align-self:flex-start;background:var(--soft);border:1px solid var(--line);border-bottom-left-radius:4px}
+.msg.t{opacity:.6}
+#aiChips{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 10px}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;font-size:12.5px;cursor:pointer;color:var(--ink)}
+.chip:hover{background:var(--brand-soft)}
+#aiForm{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
+#aiForm input{flex:1;min-width:0;padding:11px 14px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);font-size:16px}
+#aiForm button{border:0;border-radius:50%;width:44px;height:44px;background:var(--brand);color:#fff;display:grid;place-items:center;cursor:pointer;flex:none}
+@media (max-width:760px){
+  #fab2{right:76px;bottom:20px;padding:12px 14px}
+  #fab2 span{display:none}
+  #ai{inset:auto 0 0 0;width:auto;max-width:none;height:82vh;border-radius:20px 20px 0 0;border-bottom:0}
+  input,select,textarea{font-size:16px!important}
+  main{padding:18px 14px 90px}
+  .kpis{grid-template-columns:1fr 1fr;gap:10px}
+  .kpi{padding:14px}.kpi .v{font-size:18px}
+  .g2{grid-template-columns:1fr}
+  form.f{grid-template-columns:1fr 1fr}
+  .card{padding:16px;border-radius:16px}
+  .verdict{padding:16px}.verdict .big{font-size:24px}
+  .catrow{grid-template-columns:104px 1fr 84px}
+  .vh p{font-size:12.5px}
+  .top-r .tbtn[data-act="refresh"],.top-r .tbtn[data-act="logout"],.top-r a.tbtn{display:none}
+  .mb .ib{width:30px;height:30px}
+  #top{margin:0 14px}
+}
+@media print{#top,#fab,#fab2,#ai{display:none!important}}
 </style>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -356,6 +398,8 @@ const IC={
  sliders:'<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',
  plus:'<path d="M12 5v14M5 12h14"/>',
  menu:'<path d="M4 6h16M4 12h16M4 18h16"/>',
+ spark:'<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
+ send:'<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/>',
  moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
  refresh:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
@@ -550,6 +594,9 @@ function render(){
   $('#bic').textContent=(S.cfg.nombre||'R').trim().charAt(0).toUpperCase();
   $('#top').innerHTML=topHTML();
   $('#fab').innerHTML=ico('plus')+'<span>Registro rápido</span>';
+  $('#fab2').innerHTML=ico('spark')+'<span>Asistente</span>';$('#fab2').hidden=isCaj();
+  $('#aiSend').innerHTML=ico('send',18);
+  if(isCaj())$('#ai').hidden=true;
   document.title='Control Financiero · '+(S.cfg.nombre||'Restaurante');
   $('#view').innerHTML=(VIEWS[ui.view]||vPanel)();
 }
@@ -696,6 +743,9 @@ const ACT={
   demo,clearDemo,
   refresh:()=>refreshCloud(false),
   menu:()=>document.body.classList.toggle('nav-open'),
+  ai:()=>{$('#ai').hidden?aiOpen():($('#ai').hidden=true)},
+  aiClose:()=>{$('#ai').hidden=true},
+  aiQ:(id,k,b)=>aiAsk(b.textContent,id),
   theme:()=>{applyTheme(isDark()?'light':'dark');render()},
   quick:()=>openDlg(`<h2>Registro rápido</h2><p class="hint" style="margin-top:0">¿Qué quieres registrar?</p><div class="row"><button class="btn" data-act="qf" data-k="venta">Registrar venta</button><button class="btn sec" data-act="qf" data-k="gasto">Registrar gasto</button></div>`),
   qf:(id,k)=>openDlg(`<h2>Registrar ${NAME[k]}</h2><form class="two" data-form="add:${k}">${fields(k,defaults[k]())}<div class="row" style="margin-top:6px"><button class="btn">Guardar</button><button type="button" class="btn sec" data-act="close">Cancelar</button></div></form>`),
@@ -720,6 +770,59 @@ document.addEventListener('change',e=>{
 });
 document.addEventListener('input',e=>{if(e.target.closest('#dlgBody'))platoCalcUpdate()});
 window.addEventListener('hashchange',go);
+
+/* ============ Asistente ============ */
+const AI={msgs:[],busy:false};
+const AI_CHIPS=[['gano','¿Estoy ganando o perdiendo?'],['pagar','¿Qué tengo que pagar?'],['gasto','¿En qué gasto más?'],['plato','¿Qué plato me deja menos?'],['vender','¿Cuánto debo vender?']];
+const QA={
+  gano(){const c=calc(hoy().slice(0,7)),meta=num(S.cfg.metaFood);
+    if(!c.nVentas)return 'Todavía no hay ventas registradas este mes. Registra el cierre de caja de cada día y te digo cómo vas.';
+    return `Este mes vas ${c.utilVer>=0?'ganando':'perdiendo'} ${fmt(Math.abs(c.utilVer))} (margen ${pct(c.margenVer)}).\nVentas netas: ${fmt(c.neta)}. Costo de ventas: ${pct(c.food)} (tu meta es ${meta}%).${c.food*100>meta?'\nTu costo de comida está por encima de la meta: revisa porciones, desperdicio y precios de proveedores.':''}${c.prorr?'\n(Los gastos fijos se cuentan proporcionales al día de hoy).':''}`},
+  pagar(){const p=pendientes();if(!p.length)return 'No tienes pagos pendientes. 🎉';
+    const h=hoy(),lim=iso(new Date(Date.now()+7*864e5)),v=p.filter(g=>(g.vence||g.fecha)<h),n=p.filter(g=>{const d=g.vence||g.fecha;return d>=h&&d<=lim});
+    const line=g=>`• ${fdate(g.vence||g.fecha)} · ${g.proveedor||CAT[g.cat]?.n} · ${fmt(g.monto)}`;
+    return `Debes en total ${fmt(sum(p,g=>g.monto))}.\n`+(v.length?`\nVencidos (${fmt(sum(v,g=>g.monto))}):\n${v.slice(0,6).map(line).join('\n')}\n`:'')+(n.length?`\nPróximos 7 días (${fmt(sum(n,g=>g.monto))}):\n${n.slice(0,6).map(line).join('\n')}`:'\nNada vence en los próximos 7 días.')},
+  gasto(){const c=calc(hoy().slice(0,7)),t=Object.entries(c.byCat).sort((a,b)=>b[1]-a[1]).slice(0,4);
+    if(!t.length)return 'Aún no hay gastos registrados este mes.';
+    return 'Lo que más gastas este mes:\n'+t.map(([k,m],i)=>`${i+1}. ${CAT[k]?.n||k}: ${fmt(m)} (${pct(m/c.gastosTot,0)} del total)`).join('\n')},
+  plato(){const meta=num(S.cfg.metaFood),l=S.platos.filter(p=>num(p.precio)>0).map(p=>({n:p.nombre,f:platoCosto(p)/precioNeto(p.precio)*100,d:precioNeto(p.precio)-platoCosto(p)})).sort((a,b)=>b.f-a.f);
+    if(!l.length)return 'Aún no has creado platos en "Costeo de platos". Agrégalos para saber cuánto te deja cada uno.';
+    return `El plato con peor margen es "${l[0].n}": su costo es ${l[0].f.toFixed(0)}% del precio y te deja ${fmt(l[0].d)} por porción${l[0].f>meta?` (tu meta es ${meta}%: considera subirle el precio o bajar la porción)`:''}.\nEl mejor es "${l[l.length-1].n}" con ${l[l.length-1].f.toFixed(0)}%.`},
+  vender(){const c=calc(hoy().slice(0,7));if(!isFinite(c.be)||!(c.be>0))return 'Registra ventas y gastos fijos para calcular tu punto de equilibrio.';
+    const left=c.dim-c.elapsed,falta=Math.max(0,c.be-c.neta);
+    return `Para no perder necesitas vender ${fmt(c.be)} netos al mes (≈ ${fmt(c.be/c.dim)} por día).\nLlevas ${fmt(c.neta)}.${falta>0?` Te faltan ${fmt(falta)}${left>0?`, o sea ${fmt(falta/left)} por día en los ${left} días que quedan`:''}.`:' ¡Ya superaste el punto de equilibrio este mes!'}`}
+};
+function aiContext(){
+  const m=hoy().slice(0,7),c=calc(m),p=calc(addMes(m,-1));
+  const pick=x=>({ventas_netas:Math.round(x.neta),ventas_brutas:Math.round(x.bruto),costo_ventas:Math.round(x.cogs),pct_costo_ventas:+(x.food*100).toFixed(1),gastos_fijos:Math.round(x.fijos),gastos_variables:Math.round(x.varOp+x.comis),utilidad:Math.round(x.utilOp),margen_pct:+(x.margen*100).toFixed(1),punto_equilibrio:isFinite(x.be)?Math.round(x.be):null,descuadre_caja:Math.round(x.descuadre)});
+  return{moneda:S.cfg.moneda,mes:m,dias_del_mes:c.dim,dia_actual:c.elapsed,mes_actual:pick(c),mes_anterior:pick(p),proyeccion_ventas_cierre:Math.round(c.proj),gastos_por_categoria:Object.entries(c.byCat).map(([k,v])=>({categoria:CAT[k]?.n||k,monto:Math.round(v)})),platos:S.platos.map(x=>({plato:x.nombre,precio:num(x.precio),costo:Math.round(platoCosto(x)),pct_costo:+(platoCosto(x)/Math.max(1,precioNeto(x.precio))*100).toFixed(0)})),por_pagar:pendientes().slice(0,15).map(g=>({vence:g.vence||g.fecha,a:g.proveedor||CAT[g.cat]?.n,monto:Math.round(g.monto)})),metas:{costo_ventas_pct:num(S.cfg.metaFood),margen_pct:num(S.cfg.metaMargen)}};
+}
+function aiRender(){const b=$('#aiMsgs');b.innerHTML=AI.msgs.map(m=>`<div class="msg ${m.r}${m.tmp?' t':''}">${esc(m.t)}</div>`).join('');b.scrollTop=b.scrollHeight}
+function aiOpen(){
+  if(!AI.msgs.length)AI.msgs.push({r:'a',g:1,t:'Hola 👋 Soy tu asistente financiero. Pregúntame cómo va el restaurante, qué tienes que pagar o dónde se te va la plata. Elige una pregunta rápida o escribe la tuya.'});
+  $('#aiChips').innerHTML=AI_CHIPS.map(c=>`<button class="chip" data-act="aiQ" data-id="${c[0]}">${c[1]}</button>`).join('');
+  $('#ai').hidden=false;aiRender();setTimeout(()=>{if(innerWidth>760)$('#aiIn').focus()},50);
+}
+function keyOf(q){q=q.toLowerCase();return /ganando|perdiendo|utilidad|ganancia|c[oó]mo voy|c[oó]mo va/.test(q)?'gano':/pagar|debo|deuda|vence|proveedor/.test(q)?'pagar':/gast/.test(q)?'gasto':/plato|receta|men[uú]/.test(q)?'plato':/vender|equilibrio|meta/.test(q)?'vender':null}
+async function aiAsk(q,key){
+  q=q.trim();if(!q||AI.busy)return;
+  AI.msgs.push({r:'u',t:q});
+  const k=key||(CLOUD?null:keyOf(q));
+  if(k&&QA[k]){AI.msgs.push({r:'a',t:QA[k]()});aiRender();return}
+  if(!CLOUD){AI.msgs.push({r:'a',t:'Con la versión sin nube solo puedo responder las preguntas rápidas de arriba. Para preguntas libres con IA, conecta la app a la nube (Supabase) y activa el asistente en el servidor.'});aiRender();return}
+  AI.busy=true;const tmp={r:'a',t:'Pensando…',tmp:1};AI.msgs.push(tmp);aiRender();
+  const done=t=>{AI.msgs.splice(AI.msgs.indexOf(tmp),1,{r:'a',t});AI.busy=false;aiRender()};
+  try{
+    const sess=(await sb.auth.getSession()).data.session;
+    const hist=AI.msgs.filter(m=>!m.g&&!m.tmp).slice(0,-1).slice(-8).map(m=>({role:m.r==='u'?'user':'assistant',content:m.t}));
+    const r=await fetch('/api/asistente',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+sess.access_token},body:JSON.stringify({pregunta:q,historial:hist,contexto:aiContext()})});
+    const j=await r.json().catch(()=>({}));
+    if(r.status===404)return done('El asistente con IA aún no está activado en el servidor. Mientras tanto usa las preguntas rápidas.');
+    if(!r.ok)return done(j.error||'No pude responder ahora. Intenta de nuevo.');
+    done(j.respuesta||'No tengo una respuesta para eso.');
+  }catch(e){done('No pude conectarme con el asistente. Revisa tu internet e intenta de nuevo.')}
+}
+$('#aiForm').addEventListener('submit',e=>{e.preventDefault();const i=$('#aiIn'),q=i.value;i.value='';aiAsk(q)});
 
 /* ============ Nube (Supabase) ============ */
 const COLLS=['ventas','gastos','insumos','platos','empleados','recurrentes'];
