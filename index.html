@@ -102,7 +102,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 .hint{font-size:12.5px;color:var(--mute)}
 .fl{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
 .fl select{width:auto}
-@media (max-width:860px){
+@media (max-width:0px){
   #app{grid-template-columns:1fr}
   #side{position:fixed;bottom:0;left:0;right:0;top:auto;height:auto;flex-direction:row;padding:6px;border-right:0;border-top:1px solid var(--line);z-index:30;overflow-x:auto}
   .logo{display:none}
@@ -123,7 +123,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 .who{margin-top:auto;font-size:12.5px;color:var(--mute);padding:10px;border-top:1px solid var(--line);display:grid;gap:6px}
 .who[hidden]{display:none}
 .mobbar{display:none;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--mute);margin-bottom:10px;gap:8px}
-@media (max-width:860px){.who{display:none}.mobbar:not([hidden]){display:flex}}
+@media (max-width:0px){.who{display:none}.mobbar:not([hidden]){display:flex}}
 @media print{
   #side,.mb,.noprint,.btn,#toast{display:none!important}
   #app{display:block}body{background:#fff;color:#000}.card,.kpi{box-shadow:none;border-color:#bbb}
@@ -139,6 +139,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   </aside>
   <div id="content"><header id="top"></header><main id="view"></main></div>
 </div>
+<div id="scrim" data-act="menu"></div>
 <button id="fab" data-act="quick" aria-label="Registro rápido"></button>
 <div id="auth" hidden><div class="box"><div class="logo" style="padding:0"><span id="aname">Restaurante Sul</span><small>Control financiero</small></div><div id="authBody"></div></div></div>
 <dialog id="dlg"><div class="modal" id="dlgBody"></div></dialog>
@@ -197,21 +198,22 @@ form.f input,form.f select,.modal input,.modal select,.fl input,.fl select{paddi
 #fab[hidden]{display:none}
 .modal form.two{grid-template-columns:1fr 1fr}
 .modal form.two .row{grid-column:1/-1}
-@media (max-width:860px){
-  #app{grid-template-columns:78px minmax(0,1fr)}
-  #side{position:sticky;top:0;bottom:auto;left:auto;right:auto;height:100vh;width:78px;padding:0 0 10px;flex-direction:column;border-top:0;border-right:1px solid var(--line);overflow-x:hidden;overflow-y:auto}
-  .brand-row{padding:14px 0 8px;justify-content:center}
-  .brand-t,.nav-label,.who{display:none}
-  #nav{flex-direction:column;gap:2px;padding-top:6px}
-  #nav a{height:auto;margin:2px 6px;padding:9px 2px;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10px;line-height:1.15;text-align:center;border-radius:12px}
-  #top{height:58px}
-  .top-brand{display:none}
-  #nav a{overflow-wrap:anywhere;word-break:break-word;width:calc(100% - 12px)}
+.top-brand{display:none}
+.menu-btn{display:none}
+#scrim{display:none}
+@media (max-width:760px){
+  #app{grid-template-columns:minmax(0,1fr)}
+  #side{position:fixed;top:0;left:0;bottom:0;width:270px;max-width:84vw;height:auto;z-index:60;transform:translateX(-104%);transition:transform .22s ease;box-shadow:0 0 40px rgba(0,0,0,.25)}
+  body.nav-open #side{transform:none}
+  #scrim{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:55}
+  body.nav-open #scrim{display:block}
+  .menu-btn{display:grid}
+  #top{height:58px;gap:8px}
   .mb input{padding:7px 8px;font-size:13px}
-  main{padding-bottom:100px}
+  main{padding-bottom:90px}
   .vh h1{font-size:22px}
   .vh .ic{width:40px;height:40px}
-  #fab{bottom:80px;right:14px;padding:12px 16px}
+  #fab{bottom:20px;right:14px;padding:12px 16px}
   #fab span{display:none}
   .modal form.two{grid-template-columns:1fr}
 }
@@ -353,6 +355,7 @@ const IC={
  equipo:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.5 3-6 6.5-6s6.5 2.5 6.5 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.5 0 4.5 1.8 4.5 4.5"/>',
  sliders:'<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',
  plus:'<path d="M12 5v14M5 12h14"/>',
+ menu:'<path d="M4 6h16M4 12h16M4 18h16"/>',
  moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
  refresh:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
@@ -532,7 +535,7 @@ function applyTheme(t){document.documentElement.dataset.theme=t;try{localStorage
 (function(){let t=null;try{t=localStorage.getItem('rsul_theme')}catch(e){}applyTheme(t||(window.matchMedia&&matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))})();
 function topHTML(){
   const mv=!isCaj()&&MONTHV.includes(ui.view);
-  return `<div class="top-brand"><span class="brand-ic sm">${esc((S.cfg.nombre||'R').trim().charAt(0).toUpperCase())}</span></div><div class="top-r">${mv?monthbar():''}<button class="tbtn" data-act="theme" aria-label="Cambiar tema">${ico(isDark()?'sun':'moon')}</button>${CLOUD?`<button class="tbtn" data-act="refresh" aria-label="Actualizar datos">${ico('refresh')}</button><button class="tbtn" data-act="logout" aria-label="Cerrar sesión">${ico('logout')}</button>`:''}${isCaj()?'':`<a class="tbtn" href="#ajustes" aria-label="Ajustes">${ico('sliders')}</a>`}</div>`;
+  return `<button class="tbtn menu-btn" data-act="menu" aria-label="Abrir menú">${ico('menu')}</button><div class="top-r">${mv?monthbar():''}<button class="tbtn" data-act="theme" aria-label="Cambiar tema">${ico(isDark()?'sun':'moon')}</button>${CLOUD?`<button class="tbtn" data-act="refresh" aria-label="Actualizar datos">${ico('refresh')}</button><button class="tbtn" data-act="logout" aria-label="Cerrar sesión">${ico('logout')}</button>`:''}${isCaj()?'':`<a class="tbtn" href="#ajustes" aria-label="Ajustes">${ico('sliders')}</a>`}</div>`;
 }
 const navList=()=>isCaj()?NAV.filter(n=>n[0]==='ventas'||n[0]==='gastos'):NAV;
 function whoHTML(){
@@ -550,7 +553,7 @@ function render(){
   document.title='Control Financiero · '+(S.cfg.nombre||'Restaurante');
   $('#view').innerHTML=(VIEWS[ui.view]||vPanel)();
 }
-function go(){const h=location.hash.slice(1);const ok=VIEWS[h]&&navList().some(n=>n[0]===h);ui.view=ok?h:(isCaj()?'ventas':'panel');render();window.scrollTo(0,0)}
+function go(){document.body.classList.remove('nav-open');const h=location.hash.slice(1);const ok=VIEWS[h]&&navList().some(n=>n[0]===h);ui.view=ok?h:(isCaj()?'ventas':'panel');render();window.scrollTo(0,0)}
 
 /* ============ Acciones ============ */
 function collect(kind,f){const o={};for(const [n,,t] of SCH[kind]){const el=f.elements[n];if(!el)continue;let v=el.value.trim?el.value.trim():el.value;if(t==='money'||t==='int')v=v===''?'':Number(v);o[n]=v}return o}
@@ -692,13 +695,14 @@ const ACT={
   backup:()=>{S.lastBackup=Date.now();save();download(`respaldo-restaurante-${hoy()}.json`,JSON.stringify(S,null,1),'application/json');render()},
   demo,clearDemo,
   refresh:()=>refreshCloud(false),
+  menu:()=>document.body.classList.toggle('nav-open'),
   theme:()=>{applyTheme(isDark()?'light':'dark');render()},
   quick:()=>openDlg(`<h2>Registro rápido</h2><p class="hint" style="margin-top:0">¿Qué quieres registrar?</p><div class="row"><button class="btn" data-act="qf" data-k="venta">Registrar venta</button><button class="btn sec" data-act="qf" data-k="gasto">Registrar gasto</button></div>`),
   qf:(id,k)=>openDlg(`<h2>Registrar ${NAME[k]}</h2><form class="two" data-form="add:${k}">${fields(k,defaults[k]())}<div class="row" style="margin-top:6px"><button class="btn">Guardar</button><button type="button" class="btn sec" data-act="close">Cancelar</button></div></form>`),
   logout:async()=>{await sb.auth.signOut();location.reload()},
   reset:()=>{if(confirm('¿Borrar TODA la información (ventas, gastos, platos, equipo y ajustes)? Descarga un respaldo antes si dudas.')&&prompt('Escribe BORRAR para confirmar')==='BORRAR'){S=blank();save();render();toast('Todo borrado')}}
 };
-document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;const f=ACT[b.dataset.act];if(f){e.preventDefault();f(b.dataset.id,b.dataset.k,b)}});
+document.addEventListener('click',e=>{if(e.target.closest('#nav a'))document.body.classList.remove('nav-open');const b=e.target.closest('[data-act]');if(!b)return;const f=ACT[b.dataset.act];if(f){e.preventDefault();f(b.dataset.id,b.dataset.k,b)}});
 document.addEventListener('submit',e=>{const f=e.target.closest('form[data-form]');if(!f)return;e.preventDefault();onSubmit(f)});
 document.addEventListener('change',e=>{
   const t=e.target;
