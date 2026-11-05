@@ -1,5 +1,5 @@
 // Service worker: acelera la app guardando archivos estáticos. Los datos (Supabase/API) siempre van directo a internet.
-const V = 'rsul-v1';
+const V = 'rsul-v2';
 const SHELL = ['./', 'config.js', 'manifest.webmanifest', 'icons/icon-192.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(V).then(c => c.addAll(SHELL)).catch(() => {})); self.skipWaiting(); });
 self.addEventListener('activate', e => {
