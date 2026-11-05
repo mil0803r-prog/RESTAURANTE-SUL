@@ -230,12 +230,10 @@ form.f input,form.f select,.modal input,.modal select,.fl input,.fl select{paddi
   #fab span{display:none}
   .modal form.two{grid-template-columns:1fr}
 }
-html,body{max-width:100%;overflow-x:hidden;-webkit-text-size-adjust:100%}
-.card,.kpi{content-visibility:auto;contain-intrinsic-size:auto 160px}
+html,body{max-width:100%;-webkit-text-size-adjust:100%}
+body{overflow-x:clip}
 html{scroll-behavior:auto}
-.tw{will-change:scroll-position}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-body{overscroll-behavior-y:none}
 .tw{-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
 svg{max-width:100%;height:auto}
 #fab2{position:fixed;right:210px;bottom:24px;z-index:40;border:1px solid var(--line);border-radius:999px;padding:14px 20px;background:var(--card);color:var(--ink);font-weight:700;font-size:15px;box-shadow:0 8px 24px rgba(0,0,0,.12);cursor:pointer;display:flex;gap:8px;align-items:center}
