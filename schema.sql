@@ -111,3 +111,42 @@ create policy ideas_enviar on public.ideas for insert to authenticated
   with check (public.es_dueno() or public.es_cajero());
 create policy ideas_dueno on public.ideas for all to authenticated
   using (public.es_dueno()) with check (public.es_dueno());
+
+-- ========== Acceso por secciones (para cajeros) ==========
+-- El dueño elige a qué secciones entra cada cajero. Sin elegir, solo Ventas y Gastos.
+-- Ventas y Gastos: puede registrar. Panel, Por pagar, Reportes, Costeo y Nómina: solo lectura.
+alter table public.perfiles add column if not exists secciones text[];
+
+create or replace function public.tiene_seccion(s text) returns boolean
+language sql security definer stable set search_path = public as
+$$ select exists(select 1 from public.perfiles where id = auth.uid() and rol = 'cajero'
+                 and s = any(coalesce(secciones, array['ventas','gastos']))) $$;
+
+-- Registrar: solo con la sección Ventas / Gastos
+drop policy if exists cajero_crear on public.ventas;
+drop policy if exists cajero_crear on public.gastos;
+create policy cajero_crear on public.ventas for insert to authenticated
+  with check (public.tiene_seccion('ventas') and fecha >= current_date - 2 and fecha <= current_date + 1);
+create policy cajero_crear on public.gastos for insert to authenticated
+  with check (public.tiene_seccion('gastos') and fecha >= current_date - 2 and fecha <= current_date + 1);
+drop policy if exists cajero_ver on public.ventas;
+drop policy if exists cajero_ver on public.gastos;
+create policy cajero_ver on public.ventas for select to authenticated
+  using (public.tiene_seccion('ventas') and fecha >= current_date - 2);
+create policy cajero_ver on public.gastos for select to authenticated
+  using (public.tiene_seccion('gastos') and fecha >= current_date - 2);
+
+-- Leer todo el historial: Panel, Por pagar y Reportes
+create policy cajero_historial on public.ventas for select to authenticated
+  using (public.tiene_seccion('panel') or public.tiene_seccion('reportes') or public.tiene_seccion('pagar'));
+create policy cajero_historial on public.gastos for select to authenticated
+  using (public.tiene_seccion('panel') or public.tiene_seccion('reportes') or public.tiene_seccion('pagar'));
+
+-- Costeo y Nómina: solo lectura
+create policy cajero_ver on public.insumos     for select to authenticated using (public.tiene_seccion('costeo'));
+create policy cajero_ver on public.platos      for select to authenticated using (public.tiene_seccion('costeo'));
+create policy cajero_ver on public.empleados   for select to authenticated using (public.tiene_seccion('equipo'));
+create policy cajero_ver on public.recurrentes for select to authenticated using (public.tiene_seccion('equipo'));
+drop policy if exists cajero_ver on public.ajustes;
+create policy cajero_ver on public.ajustes for select to authenticated
+  using (public.es_cajero() and (key = 'cfg' or (key = 'inv' and public.tiene_seccion('costeo'))));
