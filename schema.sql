@@ -96,3 +96,18 @@ end
 $$;
 revoke all on function public.eliminar_usuario(uuid) from public, anon;
 grant execute on function public.eliminar_usuario(uuid) to authenticated;
+
+-- ========== Buzón de ideas ==========
+-- Cualquier persona con acceso (dueño o cajero) puede enviar una idea; solo el dueño las ve, marca y borra.
+create table if not exists public.ideas (
+  id uuid primary key default gen_random_uuid(),
+  autor text,
+  texto text not null check (char_length(texto) between 1 and 1000),
+  hecha boolean not null default false,
+  creado timestamptz not null default now()
+);
+alter table public.ideas enable row level security;
+create policy ideas_enviar on public.ideas for insert to authenticated
+  with check (public.es_dueno() or public.es_cajero());
+create policy ideas_dueno on public.ideas for all to authenticated
+  using (public.es_dueno()) with check (public.es_dueno());

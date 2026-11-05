@@ -153,6 +153,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 <div id="scrim" data-act="menu"></div>
 <button id="fab" data-act="quick" aria-label="Registro rápido"></button>
 <button id="fab2" data-act="ai" aria-label="Asistente"></button>
+<button id="fab3" data-act="idea" aria-label="Buzón de ideas" hidden></button>
 <aside id="ai" hidden aria-label="Asistente financiero"><div class="ai-head"><span>Asistente<small>Pregúntale a tus números</small></span><button class="tbtn" data-act="aiClose" aria-label="Cerrar" style="width:36px;height:36px">✕</button></div><div id="aiMsgs"></div><div id="aiChips"></div><form id="aiForm" autocomplete="off"><input id="aiIn" type="text" maxlength="500" placeholder="Escribe tu pregunta…" aria-label="Pregunta"><button aria-label="Enviar" id="aiSend"></button></form></aside>
 <div id="auth" hidden><div class="box"><div class="logo" style="padding:0"><span id="aname">Restaurante Sul</span><small>Control financiero</small></div><div id="authBody"></div></div></div>
 <dialog id="dlg"><div class="modal" id="dlgBody"></div></dialog>
@@ -238,7 +239,12 @@ html{scroll-behavior:auto}
 svg{max-width:100%;height:auto}
 #fab2{position:fixed;right:210px;bottom:24px;z-index:40;border:1px solid var(--line);border-radius:999px;padding:14px 20px;background:var(--card);color:var(--ink);font-weight:700;font-size:15px;box-shadow:0 8px 24px rgba(0,0,0,.12);cursor:pointer;display:flex;gap:8px;align-items:center}
 #fab2 svg{color:var(--brand)}
-#fab2[hidden],#fab[hidden]{display:none}
+#fab3{position:fixed;right:380px;bottom:24px;z-index:40;border:1px solid var(--line);border-radius:999px;padding:14px 20px;background:var(--card);color:var(--ink);font-weight:700;font-size:15px;box-shadow:0 8px 24px rgba(0,0,0,.12);cursor:pointer;display:flex;gap:8px;align-items:center}
+#fab2[hidden],#fab[hidden],#fab3[hidden]{display:none}
+.idea{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line)}
+.idea.hecha .it{text-decoration:line-through;opacity:.55}
+.idea small{display:block;color:var(--mute);margin-top:2px}
+.idea .row{flex:none}
 #ai{position:fixed;right:24px;bottom:90px;width:390px;max-width:calc(100vw - 32px);height:min(580px,calc(100vh - 130px));background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.25);z-index:70;display:flex;flex-direction:column;overflow:hidden}
 #ai[hidden]{display:none}
 .ai-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);font-weight:750}
@@ -256,6 +262,8 @@ svg{max-width:100%;height:auto}
 #aiForm button{border:0;border-radius:50%;width:44px;height:44px;background:var(--brand);color:#fff;display:grid;place-items:center;cursor:pointer;flex:none}
 @media (max-width:760px){
   #fab2{right:76px;bottom:20px;padding:12px 14px}
+  #fab3{right:132px;bottom:20px;padding:12px 14px}
+  #fab3 span{display:none}
   #fab2 span{display:none}
   #ai{inset:auto 0 0 0;width:auto;max-width:none;height:82vh;border-radius:20px 20px 0 0;border-bottom:0}
   input,select,textarea{font-size:16px!important}
@@ -272,7 +280,7 @@ svg{max-width:100%;height:auto}
   .mb .ib{width:30px;height:30px}
   #top{margin:0 14px}
 }
-@media print{#top,#fab,#fab2,#ai{display:none!important}}
+@media print{#top,#fab,#fab2,#fab3,#ai{display:none!important}}
 </style>
 <script src="config.js"></script>
 <script>if("serviceWorker"in navigator&&location.protocol.startsWith("http"))addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))</script>
@@ -319,7 +327,7 @@ function blank(){return{cfg:{...CFG0},ventas:[],gastos:[],insumos:[],platos:[],e
 function load(){try{const r=JSON.parse(localStorage.getItem(LS));if(r)return Object.assign(blank(),r,{cfg:Object.assign({},CFG0,r.cfg)})}catch(e){}return blank()}
 const AC=window.APP_CONFIG||{};
 const CLOUD=!!(AC.SUPABASE_URL&&AC.SUPABASE_ANON_KEY);
-let ROL='dueno',perfiles=[],sb=null,USER=null;
+let ROL='dueno',perfiles=[],ideas=[],sb=null,USER=null;
 const isCaj=()=>ROL==='cajero';
 let S=CLOUD?blank():load();
 function save(){if(CLOUD){queuePush();return}try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){if(!save.warned){save.warned=1;alert('Este navegador no permite guardar datos (modo privado o bloqueado). Ábrelo en Chrome o Edge normal; si no, usa "Descargar respaldo" en Ajustes.')}}}
@@ -580,6 +588,8 @@ function vAjustes(){
    <p class="hint">Referencias típicas: costo de ventas 28–35%, margen neto de un restaurante sano 8–15%. El impuesto al consumo no es ingreso tuyo, por eso se descuenta de las ventas.</p></div>
   ${CLOUD?`<div class="card"><h2>Quién puede entrar</h2><p class="hint" style="margin-top:0">Cada persona crea su cuenta con su correo desde la pantalla de entrada y queda <b>Pendiente</b> hasta que tú la apruebes aquí. <b>Cajero</b>: solo registra ventas y gastos y ve los últimos 2 días. <b>Dueño</b>: ve y edita todo.</p>
   <div class="tw"><table><tbody>${perfiles.map(p=>`<tr><td>${esc(p.email)}${p.id===USER?.id?' <span class="badge b-info">Tú</span>':''}</td><td class="n">${p.id===USER?.id?'Dueño':`<select class="rolsel" data-perfil="${p.id}"><option value="pendiente"${p.rol==='pendiente'?' selected':''}>Pendiente (sin acceso)</option><option value="cajero"${p.rol==='cajero'?' selected':''}>Cajero</option><option value="dueno"${p.rol==='dueno'?' selected':''}>Dueño</option></select>`}</td><td class="n">${(p.id===USER?.id&&!perfiles.some(x=>x.rol==='dueno'&&x.id!==USER.id))?'':`<button class="btn sec" data-act="delperfil" data-id="${p.id}" title="Quitar este correo">🗑 Eliminar</button>`}</td></tr>`).join('')}</tbody></table></div></div>`:''}
+  ${CLOUD&&!isCaj()?`<div class="card"><h2>💡 Ideas y sugerencias</h2><p class="hint" style="margin-top:0">Lo que tú y tu equipo piden agregar con el botón flotante <b>Ideas</b>.</p>
+  ${ideas.length?ideas.map(i=>`<div class="idea${i.hecha?' hecha':''}"><div><div class="it">${esc(i.texto)}</div><small>${esc(i.autor||'')} · ${fdate((i.creado||'').slice(0,10))}</small></div><div class="row"><button class="btn sec sm" data-act="ideaHecha" data-id="${i.id}">${i.hecha?'↩ Reabrir':'✔ Hecha'}</button><button class="btn sec sm" data-act="ideaDel" data-id="${i.id}" title="Borrar">🗑</button></div></div>`).join(''):'<p class="hint">Aún no hay ideas. Cuando alguien envíe una, aparece aquí.</p>'}</div>`:''}
   <div class="card"><h2>Respaldo de tu información</h2><p style="margin-top:0">${CLOUD?'Tus datos ya están en la nube. Aun así, descarga un respaldo de vez en cuando como copia extra.':'Tus datos se guardan en <b>este navegador de este computador</b>. Descarga un respaldo cada semana y guárdalo en OneDrive o enviado por correo.'}</p>
    <div class="row"><button class="btn" data-act="backup">Descargar respaldo</button><label class="btn sec" style="cursor:pointer">Restaurar respaldo<input type="file" id="restore" accept="application/json" hidden></label></div>
    <p class="hint">Último respaldo: ${S.lastBackup?new Date(S.lastBackup).toLocaleString('es'):'nunca'}</p></div>
@@ -609,6 +619,7 @@ function render(){
   $('#top').innerHTML=topHTML();
   $('#fab').innerHTML=ico('plus')+'<span>Registro rápido</span>';
   $('#fab2').innerHTML=ico('spark')+'<span>Asistente</span>';$('#fab2').hidden=isCaj();
+  $('#fab3').innerHTML='💡<span>Ideas</span>';$('#fab3').hidden=!CLOUD||ROL==='pendiente';
   $('#aiSend').innerHTML=ico('send',18);
   if(isCaj())$('#ai').hidden=true;
   document.title='Control Financiero · '+(S.cfg.nombre||'Restaurante');
@@ -737,6 +748,9 @@ const ACT={
   edit:(id,k)=>openEdit(k,id),
   editPlato:(id)=>openPlato(id),
   close:()=>$('#dlg').close(),
+  idea:()=>openDlg(`<form id="ideaForm" class="f" style="display:grid;gap:12px;padding:20px"><h2 style="margin:0">💡 ¿Qué quieres que agreguemos?</h2><p class="hint" style="margin:0">Escribe todo lo que se te ocurra. Queda guardado para el dueño.</p><textarea name="texto" rows="5" maxlength="1000" required placeholder="Ej: que se pueda imprimir el cierre del día…" style="padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);width:100%;resize:vertical"></textarea><div class="row"><button class="btn" type="submit">Enviar idea</button><button class="btn sec" type="button" data-act="close">Cancelar</button></div></form>`),
+  ideaHecha:(id)=>{const i=ideas.find(x=>x.id===id);if(!i)return;sb.from('ideas').update({hecha:!i.hecha}).eq('id',id).then(({error})=>{if(error){toast('No se pudo: '+error.message);return}i.hecha=!i.hecha;render()})},
+  ideaDel:(id)=>{if(!confirm('¿Borrar esta idea?'))return;sb.from('ideas').delete().eq('id',id).then(({error})=>{if(error){toast('No se pudo borrar: '+error.message);return}ideas=ideas.filter(x=>x.id!==id);render();toast('Idea borrada')})},
   delperfil:(id)=>{
     const p=perfiles.find(x=>x.id===id);if(!p)return;
     const yo=id===USER?.id;
@@ -773,7 +787,8 @@ const ACT={
   reset:()=>{if(confirm('¿Borrar TODA la información (ventas, gastos, platos, equipo y ajustes)? Descarga un respaldo antes si dudas.')&&prompt('Escribe BORRAR para confirmar')==='BORRAR'){S=blank();save();render();toast('Todo borrado')}}
 };
 document.addEventListener('click',e=>{if(e.target.closest('#nav a'))document.body.classList.remove('nav-open');const b=e.target.closest('[data-act]');if(!b)return;const f=ACT[b.dataset.act];if(f){e.preventDefault();f(b.dataset.id,b.dataset.k,b)}});
-document.addEventListener('submit',e=>{const f=e.target.closest('form[data-form]');if(!f)return;e.preventDefault();onSubmit(f)});
+document.addEventListener('submit',e=>{const g=e.target.closest('#ideaForm');if(g){e.preventDefault();const texto=g.elements.texto.value.trim();if(!texto)return;const b=g.querySelector('[type=submit]');b.disabled=true;sb.from('ideas').insert({autor:USER?.email||'',texto}).then(({error})=>{if(error){b.disabled=false;toast('No se pudo enviar: '+error.message);return}$('#dlg').close();toast('¡Gracias! Idea enviada ✔');if(!isCaj())refreshCloud(true)});return}
+  const f=e.target.closest('form[data-form]');if(!f)return;e.preventDefault();onSubmit(f)});
 document.addEventListener('change',e=>{
   const t=e.target;
   if(t.id==='mesSel'){if(t.value){ui.mes=t.value;render()}}
@@ -890,7 +905,7 @@ async function loadAll(){
   for(const t of (isCaj()?['ventas','gastos']:COLLS))next[t]=await fetchAll(t);
   const {data:aj,error}=await sb.from('ajustes').select('key,data');if(error)throw error;
   (aj||[]).forEach(a=>{if(a.key==='cfg')next.cfg=Object.assign({},CFG0,a.data);if(a.key==='inv')next.inv=a.data});
-  if(!isCaj()){const {data:pf}=await sb.from('perfiles').select('*').order('creado');perfiles=pf||[]}
+  if(!isCaj()){const {data:pf}=await sb.from('perfiles').select('*').order('creado');perfiles=pf||[];const {data:id}=await sb.from('ideas').select('*').order('creado',{ascending:false});ideas=id||[]}
   S=next;takeSnap();
 }
 async function refreshCloud(silent){
