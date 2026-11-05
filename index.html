@@ -241,6 +241,10 @@ svg{max-width:100%;height:auto}
 #fab2 svg{color:var(--brand)}
 #fab3{position:fixed;right:380px;bottom:24px;z-index:40;border:1px solid var(--line);border-radius:999px;padding:14px 20px;background:var(--card);color:var(--ink);font-weight:700;font-size:15px;box-shadow:0 8px 24px rgba(0,0,0,.12);cursor:pointer;display:flex;gap:8px;align-items:center}
 #fab2[hidden],#fab[hidden],#fab3[hidden]{display:none}
+body.ro #view form,body.ro #view [data-act="pagar"],body.ro #view [data-act="editPlato"],body.ro #view [data-act="del"],body.ro #view [data-act="edit"],body.ro #view [data-act="saveInv"],body.ro #view [data-act="regNomina"],body.ro #view [data-act="genFijos"],body.ro #view [data-act="delIng"],body.ro #view [data-act="addIng"],body.ro #view [data-act="demo"],body.ro #view [data-act="clearDemo"]{display:none!important}
+.secrow td{padding-top:0;border-bottom:1px solid var(--line)}
+.secs{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--mute);align-items:center}
+.secs label{display:flex;gap:5px;align-items:center;cursor:pointer;color:var(--ink)}
 .idea{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line)}
 .idea.hecha .it{text-decoration:line-through;opacity:.55}
 .idea small{display:block;color:var(--mute);margin-top:2px}
@@ -327,7 +331,9 @@ function blank(){return{cfg:{...CFG0},ventas:[],gastos:[],insumos:[],platos:[],e
 function load(){try{const r=JSON.parse(localStorage.getItem(LS));if(r)return Object.assign(blank(),r,{cfg:Object.assign({},CFG0,r.cfg)})}catch(e){}return blank()}
 const AC=window.APP_CONFIG||{};
 const CLOUD=!!(AC.SUPABASE_URL&&AC.SUPABASE_ANON_KEY);
-let ROL='dueno',perfiles=[],ideas=[],sb=null,USER=null;
+let ROL='dueno',perfiles=[],ideas=[],sb=null,USER=null,SEC=['ventas','gastos'];
+const SECS=[['panel','Panel'],['ventas','Ventas'],['gastos','Gastos'],['pagar','Por pagar'],['reportes','Reportes'],['costeo','Costeo de platos'],['equipo','Nómina y fijos']];
+const secDe=p=>Array.isArray(p.secciones)?p.secciones:['ventas','gastos'];
 const isCaj=()=>ROL==='cajero';
 let S=CLOUD?blank():load();
 function save(){if(CLOUD){queuePush();return}try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){if(!save.warned){save.warned=1;alert('Este navegador no permite guardar datos (modo privado o bloqueado). Ábrelo en Chrome o Edge normal; si no, usa "Descargar respaldo" en Ajustes.')}}}
@@ -587,7 +593,7 @@ function vAjustes(){
    <button class="btn">Guardar ajustes</button></form>
    <p class="hint">Referencias típicas: costo de ventas 28–35%, margen neto de un restaurante sano 8–15%. El impuesto al consumo no es ingreso tuyo, por eso se descuenta de las ventas.</p></div>
   ${CLOUD?`<div class="card"><h2>Quién puede entrar</h2><p class="hint" style="margin-top:0">Cada persona crea su cuenta con su correo desde la pantalla de entrada y queda <b>Pendiente</b> hasta que tú la apruebes aquí. <b>Cajero</b>: solo registra ventas y gastos y ve los últimos 2 días. <b>Dueño</b>: ve y edita todo.</p>
-  <div class="tw"><table><tbody>${perfiles.map(p=>`<tr><td>${esc(p.email)}${p.id===USER?.id?' <span class="badge b-info">Tú</span>':''}</td><td class="n">${p.id===USER?.id?'Dueño':`<select class="rolsel" data-perfil="${p.id}"><option value="pendiente"${p.rol==='pendiente'?' selected':''}>Pendiente (sin acceso)</option><option value="cajero"${p.rol==='cajero'?' selected':''}>Cajero</option><option value="dueno"${p.rol==='dueno'?' selected':''}>Dueño</option></select>`}</td><td class="n">${(p.id===USER?.id&&!perfiles.some(x=>x.rol==='dueno'&&x.id!==USER.id))?'':`<button class="btn sec" data-act="delperfil" data-id="${p.id}" title="Quitar este correo">🗑 Eliminar</button>`}</td></tr>`).join('')}</tbody></table></div></div>`:''}
+  <div class="tw"><table><tbody>${perfiles.map(p=>`<tr><td>${esc(p.email)}${p.id===USER?.id?' <span class="badge b-info">Tú</span>':''}</td><td class="n">${p.id===USER?.id?'Dueño':`<select class="rolsel" data-perfil="${p.id}"><option value="pendiente"${p.rol==='pendiente'?' selected':''}>Pendiente (sin acceso)</option><option value="cajero"${p.rol==='cajero'?' selected':''}>Cajero</option><option value="dueno"${p.rol==='dueno'?' selected':''}>Dueño</option></select>`}</td><td class="n">${(p.id===USER?.id&&!perfiles.some(x=>x.rol==='dueno'&&x.id!==USER.id))?'':`<button class="btn sec" data-act="delperfil" data-id="${p.id}" title="Quitar este correo">🗑 Eliminar</button>`}</td></tr>${p.rol==='cajero'?`<tr class="secrow"><td colspan="3"><div class="secs"><span>Secciones a las que entra:</span>${SECS.map(([k,n])=>`<label><input type="checkbox" data-sec="${p.id}" value="${k}"${secDe(p).includes(k)?' checked':''}>${n}</label>`).join('')}</div><p class="hint" style="margin:4px 0 8px">Ventas y Gastos: puede registrar. Las demás secciones las ve solo en lectura. Ajustes es siempre solo del dueño.</p></td></tr>`:''}`).join('')}</tbody></table></div></div>`:''}
   ${CLOUD&&!isCaj()?`<div class="card"><h2>💡 Ideas y sugerencias</h2><p class="hint" style="margin-top:0">Lo que tú y tu equipo piden agregar con el botón flotante <b>Ideas</b>.</p>
   ${ideas.length?ideas.map(i=>`<div class="idea${i.hecha?' hecha':''}"><div><div class="it">${esc(i.texto)}</div><small>${esc(i.autor||'')} · ${fdate((i.creado||'').slice(0,10))}</small></div><div class="row"><button class="btn sec sm" data-act="ideaHecha" data-id="${i.id}">${i.hecha?'↩ Reabrir':'✔ Hecha'}</button><button class="btn sec sm" data-act="ideaDel" data-id="${i.id}" title="Borrar">🗑</button></div></div>`).join(''):'<p class="hint">Aún no hay ideas. Cuando alguien envíe una, aparece aquí.</p>'}</div>`:''}
   <div class="card"><h2>Respaldo de tu información</h2><p style="margin-top:0">${CLOUD?'Tus datos ya están en la nube. Aun así, descarga un respaldo de vez en cuando como copia extra.':'Tus datos se guardan en <b>este navegador de este computador</b>. Descarga un respaldo cada semana y guárdalo en OneDrive o enviado por correo.'}</p>
@@ -602,10 +608,10 @@ const isDark=()=>document.documentElement.dataset.theme==='dark';
 function applyTheme(t){document.documentElement.dataset.theme=t;try{localStorage.setItem('rsul_theme',t)}catch(e){}}
 (function(){let t=null;try{t=localStorage.getItem('rsul_theme')}catch(e){}applyTheme(t||(window.matchMedia&&matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))})();
 function topHTML(){
-  const mv=!isCaj()&&MONTHV.includes(ui.view);
+  const mv=(!isCaj()||!['ventas','gastos'].includes(ui.view))&&MONTHV.includes(ui.view);
   return `<button class="tbtn menu-btn" data-act="menu" aria-label="Abrir menú">${ico('menu')}</button><div class="top-r">${mv?monthbar():''}<button class="tbtn" data-act="theme" aria-label="Cambiar tema">${ico(isDark()?'sun':'moon')}</button>${CLOUD?`<button class="tbtn" data-act="refresh" aria-label="Actualizar datos">${ico('refresh')}</button><button class="tbtn" data-act="logout" aria-label="Cerrar sesión">${ico('logout')}</button>`:''}${isCaj()?'':`<a class="tbtn" href="#ajustes" aria-label="Ajustes">${ico('sliders')}</a>`}</div>`;
 }
-const navList=()=>isCaj()?NAV.filter(n=>n[0]==='ventas'||n[0]==='gastos'):NAV;
+const navList=()=>isCaj()?NAV.filter(n=>n[0]!=='ajustes'&&SEC.includes(n[0])):NAV;
 function whoHTML(){
   if(!CLOUD)return '';
   return `<div><b>${esc(USER?.email||'')}</b><br>${isCaj()?'Cajero':'Dueño'}</div><div class="row"><button class="btn sec sm" data-act="refresh">↻ Actualizar</button><button class="btn sec sm" data-act="logout">Salir</button></div>`;
@@ -622,10 +628,11 @@ function render(){
   $('#fab3').innerHTML='💡<span>Ideas</span>';$('#fab3').hidden=!CLOUD||ROL==='pendiente';
   $('#aiSend').innerHTML=ico('send',18);
   if(isCaj())$('#ai').hidden=true;
+  document.body.classList.toggle('ro',isCaj()&&!['ventas','gastos'].includes(ui.view));
   document.title='Control Financiero · '+(S.cfg.nombre||'Restaurante');
   $('#view').innerHTML=(VIEWS[ui.view]||vPanel)();
 }
-function go(){document.body.classList.remove('nav-open');const h=location.hash.slice(1);const ok=VIEWS[h]&&navList().some(n=>n[0]===h);ui.view=ok?h:(isCaj()?'ventas':'panel');render();window.scrollTo(0,0)}
+function go(){document.body.classList.remove('nav-open');const h=location.hash.slice(1);const ok=VIEWS[h]&&navList().some(n=>n[0]===h);ui.view=ok?h:(isCaj()?(navList()[0]||['ventas'])[0]:'panel');render();window.scrollTo(0,0)}
 
 /* ============ Acciones ============ */
 function collect(kind,f){const o={};for(const [n,,t] of SCH[kind]){const el=f.elements[n];if(!el)continue;let v=el.value.trim?el.value.trim():el.value;if(t==='money'||t==='int')v=v===''?'':Number(v);o[n]=v}return o}
@@ -793,9 +800,15 @@ document.addEventListener('change',e=>{
   const t=e.target;
   if(t.id==='mesSel'){if(t.value){ui.mes=t.value;render()}}
   else if(t.id==='fcat'){ui.fcat=t.value;render()}
+  else if(t.dataset&&t.dataset.sec){
+    const id=t.dataset.sec,p=perfiles.find(x=>x.id===id);if(!p)return;
+    const sel=[...document.querySelectorAll('input[data-sec="'+id+'"]')].filter(i=>i.checked).map(i=>i.value);
+    if(!sel.length){t.checked=true;toast('Debe tener acceso al menos a una sección');return}
+    sb.from('perfiles').update({secciones:sel}).eq('id',id).then(({error})=>{if(error){toast('No se pudo guardar: '+error.message);refreshCloud();return}p.secciones=sel;toast('Secciones actualizadas ✔')});
+  }
   else if(t.id==='fest'){ui.fest=t.value;render()}
   else if(t.dataset&&t.dataset.perfil){
-    sb.from('perfiles').update({rol:t.value}).eq('id',t.dataset.perfil).then(({error})=>{if(error)toast('No se pudo cambiar: '+error.message);else{perfiles.find(p=>p.id===t.dataset.perfil).rol=t.value;toast('Acceso actualizado ✔')}});
+    sb.from('perfiles').update({rol:t.value}).eq('id',t.dataset.perfil).then(({error})=>{if(error)toast('No se pudo cambiar: '+error.message);else{perfiles.find(p=>p.id===t.dataset.perfil).rol=t.value;render();toast('Acceso actualizado ✔')}});
   }
   else if(t.name==='cat'&&t.form&&/gasto/.test(t.form.dataset.form)){t.form.elements.tipo.value=CAT[t.value].t}
   else if(t.id==='restore'&&t.files[0]){
@@ -902,7 +915,9 @@ async function fetchAll(t){
 }
 async function loadAll(){
   const next=blank();next.lastBackup=S.lastBackup;
-  for(const t of (isCaj()?['ventas','gastos']:COLLS))next[t]=await fetchAll(t);
+  const need=isCaj()?new Set(['panel','ventas','gastos','pagar','reportes'].some(k=>SEC.includes(k))?['ventas','gastos']:[]):null;
+  if(isCaj()){if(SEC.includes('costeo')){need.add('insumos');need.add('platos')}if(SEC.includes('equipo')){need.add('empleados');need.add('recurrentes')}}
+  for(const t of (isCaj()?[...need]:COLLS))next[t]=await fetchAll(t);
   const {data:aj,error}=await sb.from('ajustes').select('key,data');if(error)throw error;
   (aj||[]).forEach(a=>{if(a.key==='cfg')next.cfg=Object.assign({},CFG0,a.data);if(a.key==='inv')next.inv=a.data});
   if(!isCaj()){const {data:pf}=await sb.from('perfiles').select('*').order('creado');perfiles=pf||[];const {data:id}=await sb.from('ideas').select('*').order('creado',{ascending:false});ideas=id||[]}
@@ -932,9 +947,9 @@ function showLogin(msg='',mode='in'){
 }
 async function enter(session){
   USER=session.user;
-  const {data:pf,error}=await sb.from('perfiles').select('rol').eq('id',USER.id).maybeSingle();
+  const {data:pf,error}=await sb.from('perfiles').select('rol,secciones').eq('id',USER.id).maybeSingle();
   if(error||!pf){authScreen(`<p>No se pudo leer tu perfil. ¿Ejecutaste el archivo <b>schema.sql</b> en Supabase?</p><p class="hint">${esc(error?error.message:'Perfil no encontrado')}</p><button class="btn sec" id="so">Salir</button>`);$('#so').onclick=()=>sb.auth.signOut().then(()=>location.reload());return}
-  ROL=pf.rol==='dueno'?'dueno':pf.rol==='cajero'?'cajero':'pendiente';
+  ROL=pf.rol==='dueno'?'dueno':pf.rol==='cajero'?'cajero':'pendiente';SEC=secDe(pf);
   if(ROL==='pendiente'){authScreen(`<h2 style="margin-top:14px">Esperando aprobación</h2><p>Tu cuenta (${esc(USER.email)}) fue creada. El dueño debe darte acceso desde <b>Ajustes → Quién puede entrar</b>. Vuelve a abrir esta página cuando te avise.</p><div class="row"><button class="btn" id="rt">Revisar de nuevo</button><button class="btn sec" id="so">Salir</button></div>`);$('#rt').onclick=()=>enter(session);$('#so').onclick=()=>sb.auth.signOut().then(()=>location.reload());return}
   try{await loadAll()}catch(e){authScreen(`<p>No se pudieron cargar los datos.</p><p class="hint">${esc(e.message||e)}</p><button class="btn sec" id="so">Salir</button>`);$('#so').onclick=()=>sb.auth.signOut().then(()=>location.reload());return}
   $('#auth').hidden=true;$('#app').hidden=false;
