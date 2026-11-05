@@ -79,3 +79,17 @@ create policy cajero_crear on public.gastos for insert to authenticated
   with check (public.es_cajero() and fecha >= current_date - 2 and fecha <= current_date + 1);
 create policy cajero_ver on public.ajustes for select to authenticated
   using (public.es_cajero() and key = 'cfg');
+
+-- ========== Eliminar usuarios (solo el dueño) ==========
+-- Borra la cuenta completa (y su perfil). La persona tendrá que registrarse de nuevo.
+create or replace function public.eliminar_usuario(uid uuid) returns void
+language plpgsql security definer set search_path = public, auth as
+$$
+begin
+  if not public.es_dueno() then raise exception 'Solo el dueño puede eliminar usuarios'; end if;
+  if uid = auth.uid() then raise exception 'No puedes eliminarte a ti mismo'; end if;
+  delete from auth.users where id = uid;
+end
+$$;
+revoke all on function public.eliminar_usuario(uuid) from public, anon;
+grant execute on function public.eliminar_usuario(uuid) to authenticated;
