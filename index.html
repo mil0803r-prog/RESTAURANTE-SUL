@@ -567,7 +567,7 @@ function vAjustes(){
    <button class="btn">Guardar ajustes</button></form>
    <p class="hint">Referencias típicas: costo de ventas 28–35%, margen neto de un restaurante sano 8–15%. El impuesto al consumo no es ingreso tuyo, por eso se descuenta de las ventas.</p></div>
   ${CLOUD?`<div class="card"><h2>Quién puede entrar</h2><p class="hint" style="margin-top:0">Cada persona crea su cuenta con su correo desde la pantalla de entrada y queda <b>Pendiente</b> hasta que tú la apruebes aquí. <b>Cajero</b>: solo registra ventas y gastos y ve los últimos 2 días. <b>Dueño</b>: ve y edita todo.</p>
-  <div class="tw"><table><tbody>${perfiles.map(p=>`<tr><td>${esc(p.email)}${p.id===USER?.id?' <span class="badge b-info">Tú</span>':''}</td><td class="n">${p.id===USER?.id?'Dueño':`<select class="rolsel" data-perfil="${p.id}"><option value="pendiente"${p.rol==='pendiente'?' selected':''}>Pendiente (sin acceso)</option><option value="cajero"${p.rol==='cajero'?' selected':''}>Cajero</option><option value="dueno"${p.rol==='dueno'?' selected':''}>Dueño</option></select>`}</td><td class="n">${p.id===USER?.id?'':`<button class="btn sec" data-act="delperfil" data-id="${p.id}" title="Quitar este correo">🗑 Eliminar</button>`}</td></tr>`).join('')}</tbody></table></div></div>`:''}
+  <div class="tw"><table><tbody>${perfiles.map(p=>`<tr><td>${esc(p.email)}${p.id===USER?.id?' <span class="badge b-info">Tú</span>':''}</td><td class="n">${p.id===USER?.id?'Dueño':`<select class="rolsel" data-perfil="${p.id}"><option value="pendiente"${p.rol==='pendiente'?' selected':''}>Pendiente (sin acceso)</option><option value="cajero"${p.rol==='cajero'?' selected':''}>Cajero</option><option value="dueno"${p.rol==='dueno'?' selected':''}>Dueño</option></select>`}</td><td class="n">${(p.id===USER?.id&&!perfiles.some(x=>x.rol==='dueno'&&x.id!==USER.id))?'':`<button class="btn sec" data-act="delperfil" data-id="${p.id}" title="Quitar este correo">🗑 Eliminar</button>`}</td></tr>`).join('')}</tbody></table></div></div>`:''}
   <div class="card"><h2>Respaldo de tu información</h2><p style="margin-top:0">${CLOUD?'Tus datos ya están en la nube. Aun así, descarga un respaldo de vez en cuando como copia extra.':'Tus datos se guardan en <b>este navegador de este computador</b>. Descarga un respaldo cada semana y guárdalo en OneDrive o enviado por correo.'}</p>
    <div class="row"><button class="btn" data-act="backup">Descargar respaldo</button><label class="btn sec" style="cursor:pointer">Restaurar respaldo<input type="file" id="restore" accept="application/json" hidden></label></div>
    <p class="hint">Último respaldo: ${S.lastBackup?new Date(S.lastBackup).toLocaleString('es'):'nunca'}</p></div>
@@ -727,8 +727,9 @@ const ACT={
   close:()=>$('#dlg').close(),
   delperfil:(id)=>{
     const p=perfiles.find(x=>x.id===id);if(!p)return;
-    if(!confirm('¿Eliminar a '+p.email+'? Perderá el acceso y tendrá que crear su cuenta de nuevo.'))return;
-    sb.rpc('eliminar_usuario',{uid:id}).then(({error})=>{if(error){toast('No se pudo eliminar: '+error.message);return}perfiles=perfiles.filter(x=>x.id!==id);render();toast('Correo eliminado ✔')});
+    const yo=id===USER?.id;
+    if(!confirm(yo?'¿Eliminar TU propia cuenta? Saldrás de la app y perderás el acceso.':'¿Eliminar a '+p.email+'? Perderá el acceso y tendrá que crear su cuenta de nuevo.'))return;
+    sb.rpc('eliminar_usuario',{uid:id}).then(({error})=>{if(error){toast('No se pudo eliminar: '+error.message);return}if(yo){sb.auth.signOut().then(()=>location.reload());return}perfiles=perfiles.filter(x=>x.id!==id);render();toast('Correo eliminado ✔')});
   },
   del:(id,k)=>{
     if(k==='insumo'&&S.platos.some(p=>p.ings.some(i=>i.ins===id))){toast('Ese insumo se usa en un plato. Quítalo del plato primero.');return}

@@ -87,7 +87,10 @@ language plpgsql security definer set search_path = public, auth as
 $$
 begin
   if not public.es_dueno() then raise exception 'Solo el dueño puede eliminar usuarios'; end if;
-  if uid = auth.uid() then raise exception 'No puedes eliminarte a ti mismo'; end if;
+  if exists(select 1 from public.perfiles where id = uid and rol = 'dueno')
+     and not exists(select 1 from public.perfiles where rol = 'dueno' and id <> uid) then
+    raise exception 'Debe quedar al menos un dueño';
+  end if;
   delete from auth.users where id = uid;
 end
 $$;
