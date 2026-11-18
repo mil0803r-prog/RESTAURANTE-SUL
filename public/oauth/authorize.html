@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Permitir acceso · Restaurante</title>
+<link rel="icon" href="/favicon.ico">
+<style>
+:root{--bg:#f6f4ef;--card:#fff;--ink:#1d2433;--mute:#6b7280;--line:#e6e2d9;--brand:#b4412c;--bad:#b42318}
+@media (prefers-color-scheme:dark){:root{--bg:#14161b;--card:#1d2027;--ink:#eceff4;--mute:#9aa3b2;--line:#2c313b;--brand:#cc5a3b;--bad:#ff8a7a}}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;padding:16px;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.box{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px;width:min(440px,100%)}
+h1{font-size:20px;margin:0 0 4px}
+.mute{color:var(--mute);font-size:14px}
+.ap{margin:16px 0;padding:12px 14px;border:1px solid var(--line);border-radius:12px;word-break:break-word}
+.ap b{font-size:17px}
+label.op{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:12px;margin:8px 0;cursor:pointer}
+label.op input{margin-top:4px}
+.row{display:flex;gap:10px;margin-top:18px}
+button{flex:1;border:0;border-radius:999px;padding:13px 16px;font:inherit;font-weight:700;cursor:pointer}
+#ok{background:var(--brand);color:#fff}
+#no{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button:disabled{opacity:.6;cursor:default}
+.err{color:var(--bad);font-weight:600}
+</style>
+</head>
+<body>
+<div class="box" id="box"><div class="mute">Cargando…</div></div>
+<script src="/config.js"></script>
+<script src="/vendor/supabase.js"></script>
+<script>
+(function(){
+  var box=document.getElementById('box');
+  function el(t,a,txt){var e=document.createElement(t);if(a)for(var k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;return e}
+  function pantalla(){box.textContent='';for(var i=0;i<arguments.length;i++)box.appendChild(arguments[i])}
+  function error(msg){pantalla(el('h1',null,'No se puede continuar'),el('p',{class:'err'},msg),el('p',{class:'mute'},'Cierra esta ventana y vuelve a intentarlo desde la aplicación que quieres conectar.'))}
+
+  var q=new URLSearchParams(location.search);
+  var P={cid:q.get('client_id')||'',ru:q.get('redirect_uri')||'',state:q.get('state'),ch:q.get('code_challenge')||'',cm:q.get('code_challenge_method'),rt:q.get('response_type')};
+  if(P.rt!=='code'||!P.cid||!P.ru||!P.ch||(P.cm&&P.cm!=='S256'))return error('La solicitud de conexión es inválida (falta información o no usa PKCE S256).');
+  var AC=window.APP_CONFIG||{};
+  if(!window.supabase||!AC.SUPABASE_URL)return error('No se pudo cargar el servicio. Revisa tu conexión y recarga.');
+  var sb=window.supabase.createClient(AC.SUPABASE_URL,AC.SUPABASE_ANON_KEY);
+
+  function volver(params){
+    var u=new URL(P.ru);for(var k in params)u.searchParams.set(k,params[k]);
+    if(P.state!=null)u.searchParams.set('state',P.state);
+    location.replace(u.toString());
+  }
+
+  (async function(){
+    try{
+      var c=(await sb.rpc('oauth_cliente',{p_client:P.cid})).data;
+      if(!c)return error('La aplicación que pide acceso no está registrada.');
+      if(c.redirect_uris.indexOf(P.ru)<0)return error('La dirección de retorno no coincide con la registrada por la aplicación.');
+      var ses=(await sb.auth.getSession()).data.session;
+      if(!ses){
+        try{sessionStorage.setItem('oauth_pend',location.search)}catch(e){}
+        pantalla(el('h1',null,'Entra a tu cuenta'),el('p',{class:'mute'},'Primero inicia sesión en Restaurante; después volverás aquí para permitir el acceso.'));
+        setTimeout(function(){location.replace('/')},900);return;
+      }
+      var pf=(await sb.from('perfiles').select('rol').eq('id',ses.user.id).maybeSingle()).data;
+      if(!pf||pf.rol!=='dueno')return error('Solo el dueño del negocio puede conectar aplicaciones.');
+
+      var host='';try{host=new URL(P.ru).host}catch(e){}
+      var ap=el('div',{class:'ap'});ap.appendChild(el('b',null,c.nombre));ap.appendChild(el('div',{class:'mute'},'se conectará desde: '+host));
+      var o1=el('label',{class:'op'}),r1=el('input',{type:'radio',name:'perm',value:'escritura',checked:'checked'});
+      var t1=el('div');t1.appendChild(el('b',null,'Leer y registrar'));t1.appendChild(el('div',{class:'mute'},'Consultar ventas, gastos y resumen, y registrar ventas y gastos nuevos.'));o1.appendChild(r1);o1.appendChild(t1);
+      var o2=el('label',{class:'op'}),r2=el('input',{type:'radio',name:'perm',value:'lectura'});
+      var t2=el('div');t2.appendChild(el('b',null,'Solo leer'));t2.appendChild(el('div',{class:'mute'},'Solo consultar. No puede cambiar nada.'));o2.appendChild(r2);o2.appendChild(t2);
+      var msg=el('p',{class:'err'});
+      var ok=el('button',{id:'ok',type:'button'},'Permitir acceso'),no=el('button',{id:'no',type:'button'},'Cancelar');
+      var row=el('div',{class:'row'});row.appendChild(no);row.appendChild(ok);
+      pantalla(el('h1',null,'Permitir acceso'),el('div',{class:'mute'},'Entraste como '+ses.user.email),ap,
+        el('p',{class:'mute'},'Esta aplicación podrá ver los datos de tu restaurante. Solo permite aplicaciones en las que confíes. Puedes quitar el acceso cuando quieras en Ajustes → Conexiones.'),o1,o2,msg,row);
+      no.onclick=function(){volver({error:'access_denied'})};
+      ok.onclick=async function(){
+        ok.disabled=no.disabled=true;msg.textContent='';
+        var perm=r2.checked?'lectura':'escritura';
+        var r=await sb.rpc('oauth_aprobar',{p_client:P.cid,p_redirect:P.ru,p_challenge:P.ch,p_permiso:perm});
+        if(r.error||!r.data){ok.disabled=no.disabled=false;msg.textContent=(r.error&&r.error.message)||'No se pudo autorizar.';return}
+        pantalla(el('h1',null,'Listo ✔'),el('p',{class:'mute'},'Volviendo a '+c.nombre+'…'));
+        volver({code:r.data});
+      };
+    }catch(e){error('Ocurrió un error. Recarga la página.')}
+  })();
+})();
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 // Servidor MCP (Model Context Protocol) del restaurante, por HTTP sin estado.
-// Se conecta con: Authorization: Bearer rsk_...   (la clave se crea en la app: Ajustes → Conexiones)
-const { ApiError, ops, cors, claveDe, cuerpo } = require('./_lib/core');
+// Se conecta iniciando sesión (OAuth: ChatGPT, Claude…) o con una clave: Authorization: Bearer rsk_...
+const { ApiError, ops, cors, claveDe, cuerpo, exigirLogin } = require('./_lib/core');
 
 const VERSION = '1.0.0';
 const fechaProp = d => ({ type: 'string', description: d + ' (AAAA-MM-DD)' });
@@ -76,7 +76,7 @@ module.exports = async (req, res) => {
   if (req.method !== 'POST') { res.setHeader('Allow', 'POST, OPTIONS'); return res.status(405).json({ error: 'Usa POST (MCP por HTTP).' }); }
   try {
     const key = claveDe(req);
-    if (!key) { res.setHeader('WWW-Authenticate', 'Bearer'); return res.status(401).json({ jsonrpc: '2.0', id: null, error: { code: -32001, message: 'Falta la clave de API (Authorization: Bearer rsk_...)' } }); }
+    if (!key) { exigirLogin(req, res); return res.status(401).json({ jsonrpc: '2.0', id: null, error: { code: -32001, message: 'Falta la clave de API (Authorization: Bearer rsk_...)' } }); }
     let body;
     try { body = cuerpo(req); } catch (e) { return res.status(400).json(fail(null, -32700, 'JSON inválido')); }
     if (Array.isArray(body)) {
@@ -86,7 +86,7 @@ module.exports = async (req, res) => {
     const out = await atender(body, key);
     return out === null ? res.status(202).end() : res.status(200).json(out);
   } catch (e) {
-    if (e instanceof ApiError && e.status === 401) { res.setHeader('WWW-Authenticate', 'Bearer'); return res.status(401).json({ jsonrpc: '2.0', id: null, error: { code: -32001, message: 'Clave de API inválida o revocada.' } }); }
+    if (e instanceof ApiError && e.status === 401) { exigirLogin(req, res); return res.status(401).json({ jsonrpc: '2.0', id: null, error: { code: -32001, message: 'Clave de API inválida o revocada.' } }); }
     return res.status(500).json({ jsonrpc: '2.0', id: null, error: { code: -32603, message: 'Error interno' } });
   }
 };
