@@ -245,6 +245,11 @@ svg{max-width:100%;height:auto}
 #fab2[hidden],#fab[hidden],#fab3[hidden]{display:none}
 body.ro #view form,body.ro #view [data-act="pagar"],body.ro #view [data-act="editPlato"],body.ro #view [data-act="del"],body.ro #view [data-act="edit"],body.ro #view [data-act="saveInv"],body.ro #view [data-act="regNomina"],body.ro #view [data-act="genFijos"],body.ro #view [data-act="delIng"],body.ro #view [data-act="addIng"],body.ro #view [data-act="demo"],body.ro #view [data-act="clearDemo"]{display:none!important}
 .code{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:13px ui-monospace,Consolas,monospace;word-break:break-all;user-select:all;margin:6px 0}
+.catsbox{border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.catsgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:6px}
+.catchip{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:999px;padding:4px 6px 4px 12px;background:var(--soft);font-weight:600}
+.catchip .lnk{border:0;background:transparent;cursor:pointer;padding:2px 5px;color:var(--mute);border-radius:6px}
+.catchip .lnk:hover{background:var(--line);color:var(--ink)}
 .secs[hidden]{display:none}
 .secrow td{padding-top:0;border-bottom:1px solid var(--line)}
 .secs{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--mute);align-items:center}
@@ -304,7 +309,7 @@ const CATS=[
  ['marketing','Publicidad y redes','fijo',0],['mant','Mantenimiento y reparaciones','fijo',0],
  ['impuestos','Impuestos, licencias y contador','fijo',0],['financiero','Créditos y gastos financieros','fijo',0],['otros','Otros','var',0]];
 const CAT=Object.fromEntries(CATS.map(c=>[c[0],{id:c[0],n:c[1],t:c[2],cogs:!!c[3]}]));
-const CFG0={nombre:'Restaurante',moneda:'COP',inc:8,incIncluido:true,comApps:0,comTarjeta:0,metaFood:32,metaMargen:10,carga:50};
+const CFG0={nombre:'Restaurante',moneda:'COP',inc:8,incIncluido:true,comApps:0,comTarjeta:0,metaFood:32,metaMargen:10,carga:50,catsVenta:[]};
 const COLL={venta:'ventas',gasto:'gastos',empleado:'empleados',insumo:'insumos',recurrente:'recurrentes',plato:'platos'};
 const NAME={venta:'venta',gasto:'gasto',empleado:'empleado',insumo:'insumo',recurrente:'gasto fijo',plato:'plato'};
 const METODOS=['Efectivo','Transferencia','Tarjeta','Crédito con proveedor','Otro'];
@@ -340,7 +345,7 @@ const CLOUD=!!(AC.SUPABASE_URL&&AC.SUPABASE_ANON_KEY);
 let ADMIN=false,FEATS=[];
 /* Novedades que se registran SOLAS como Beta cuando el administrador abre la app (no hace falta SQL).
    Formato: {clave:'cierre_caja',titulo:'Cierre de caja',descripcion:'Qué hace'} */
-const NOVEDADES=[{clave:'api',titulo:'API y MCP',descripcion:'Claves para conectar Claude u otras apps con tu restaurante: consultar y registrar ventas y gastos.'}];
+const NOVEDADES=[{clave:'ventas_categorias',titulo:'Ventas por tipo de comida',descripcion:'Crea tus categorías (Pollo, Carnes, Bebidas…), reparte la venta del día entre ellas y mira cuál vende más.'},{clave:'api',titulo:'API y MCP',descripcion:'Claves para conectar Claude u otras apps con tu restaurante: consultar y registrar ventas y gastos.'}];
 const feat=k=>FEATS.some(f=>f.clave===k&&(f.estado==='publicada'||ADMIN));
 const betaTag=k=>ADMIN&&FEATS.some(f=>f.clave===k&&f.estado==='beta')?' <span class="badge b-info">Beta</span>':'';
 let ROL='dueno',perfiles=[],ideas=[],invitaciones=[],apiKeys=[],oauthApps=[],sb=null,USER=null,SEC=['ventas','gastos'];
@@ -456,7 +461,19 @@ function field(kind,[n,l,t,opts],v){
   if(t==='date')return `<label>${l}<input type="date" name="${n}" value="${val}"${n==='fecha'?' required':''}></label>`;
   return `<label>${l}<input type="text" name="${n}" value="${esc(val)}" autocomplete="off"></label>`;
 }
-const fields=(kind,v)=>SCH[kind].map(f=>field(kind,f,v)).join('');
+const catsV=()=>Array.isArray(S.cfg.catsVenta)?S.cfg.catsVenta:[];
+const catsOn=()=>feat('ventas_categorias')&&catsV().length>0;
+function catsFields(v){
+  if(!catsOn())return '';
+  return `<div class="catsbox" style="grid-column:1/-1"><b>Reparto por tipo de comida${betaTag('ventas_categorias')}</b> <span class="hint">(opcional: cuánto de esta venta fue de cada tipo)</span><div class="catsgrid">${catsV().map(c=>`<label>${esc(c.n)}<input type="number" name="cat_${esc(c.id)}" min="0" step="any" inputmode="decimal" value="${v&&v.cats&&v.cats[c.id]?v.cats[c.id]:''}"></label>`).join('')}</div><div class="hint catsresto"></div></div>`;
+}
+function catsResto(f){
+  const box=f.querySelector('.catsresto');if(!box)return;
+  const g=n=>num((f.elements[n]||{}).value);
+  const tot=g('efectivo')+g('tarjeta')+g('transf')+g('apps');let rep=0;catsV().forEach(c=>rep+=g('cat_'+c.id));
+  box.innerHTML=rep===0?'':(rep>tot+0.5?`<span class="bad">Repartiste ${fmt(rep)}, más que el total de la venta (${fmt(tot)}). Revisa los valores.</span>`:`Repartido: <b>${fmt(rep)}</b> · Sin categoría: <b>${fmt(tot-rep)}</b>`);
+}
+const fields=(kind,v)=>SCH[kind].map(f=>field(kind,f,v)).join('')+(kind==='venta'?catsFields(v):'');
 const defaults={
   venta:()=>({fecha:ui.lastFecha}),
   gasto:()=>({fecha:ui.lastFecha,cat:'insumos',tipo:'var',estado:'pagado',metodo:'Efectivo'}),
@@ -525,12 +542,34 @@ function vPanel(){
     `<div class="card"><h2>Ventas vs. gastos por día</h2><div class="legend"><span><i style="background:var(--in)"></i>Ventas netas</span><span><i style="background:var(--out)"></i>Gastos</span></div>${chartDias(c)}</div>`+
     `<div class="grid g2">${beCard}${alCard}</div><div class="grid g2">${catCard}${proxCard}</div>`;
 }
+function catsAdminCard(){
+  if(isCaj()||!feat('ventas_categorias'))return '';
+  const L=catsV();
+  return `<div class="card"><h2>Tipos de comida${betaTag('ventas_categorias')}</h2><p class="hint" style="margin-top:0">Crea tus categorías (Pollo, Carnes, Pescados, Bebidas, Postres…). Al registrar una venta podrás repartir cuánto vendiste de cada una, y abajo verás cuál vende más.</p>
+  <div class="row" style="flex-wrap:wrap;gap:8px;margin-bottom:10px">${L.length?L.map(c=>`<span class="catchip">${esc(c.n)}<button class="lnk" data-act="renCatV" data-id="${esc(c.id)}" title="Renombrar">✏</button><button class="lnk" data-act="delCatV" data-id="${esc(c.id)}" title="Quitar">✕</button></span>`).join(''):'<span class="hint">Aún no tienes categorías.</span>'}</div>
+  <form id="catVForm" class="row" style="gap:8px"><input name="n" required maxlength="40" placeholder="Nueva categoría (ej: Pollo)" style="flex:1;min-width:200px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)"><button class="btn" type="submit">Agregar</button></form>
+  ${L.length?'':'<button class="btn sec sm" data-act="sugCatV" style="margin-top:8px">Agregar las más comunes</button>'}</div>`;
+}
+function catsResumenCard(c){
+  if(isCaj()||!feat('ventas_categorias')||!catsV().length)return '';
+  const tot={};let rp=0;c.vs.forEach(v=>{const m=v.cats||{};for(const k in m){tot[k]=(tot[k]||0)+num(m[k]);rp+=num(m[k])}});
+  const rows=catsV().map(x=>({n:x.n,v:tot[x.id]||0}));
+  Object.keys(tot).filter(k=>!catsV().some(x=>x.id===k)).forEach(k=>rows.push({n:'(categoría eliminada)',v:tot[k]}));
+  rows.sort((a,b)=>b.v-a.v);
+  const sin=Math.max(0,c.bruto-rp),max=Math.max(1,...rows.map(r=>r.v),sin),pc=x=>c.bruto>0?(Math.round(x/c.bruto*1000)/10)+'%':'';
+  return `<div class="card"><h2>Ventas de ${mesLabel(ui.mes)} por tipo de comida</h2>${rp>0?`<div class="tw"><table><thead><tr><th>Tipo</th><th class="n">Ventas</th><th class="n">% del total</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.n)}</td><td class="n"><b>${fmt(r.v)}</b></td><td class="n">${pc(r.v)}</td><td style="width:35%"><div class="bar"><i style="width:${Math.round(r.v/max*100)}%"></i></div></td></tr>`).join('')}</tbody><tfoot><tr><td>Sin categoría</td><td class="n">${fmt(sin)}</td><td class="n">${pc(sin)}</td><td></td></tr></tfoot></table></div>`:'<div class="empty">Aún no hay ventas repartidas por tipo de comida este mes. Al registrar una venta, reparte el valor en los campos de cada categoría.</div>'}</div>`;
+}
+function catsChips(v){
+  if(!feat('ventas_categorias')||!v.cats)return '';
+  const t=Object.keys(v.cats).filter(k=>num(v.cats[k])>0).map(k=>(catsV().find(x=>x.id===k)||{n:'(eliminada)'}).n+' '+fmt(v.cats[k]));
+  return t.length?`<div class="hint">${esc(t.join(' · '))}</div>`:'';
+}
 function vVentas(){
   const c=calc(ui.mes),rows=c.vs.slice().sort((a,b)=>b.fecha.localeCompare(a.fecha));
   return head('Ventas',isCaj()?'':undefined)+(isCaj()?'<p class="hint" style="margin-top:-8px">Aquí ves lo registrado en los últimos 2 días. Si te equivocas en un dato, avísale al dueño para corregirlo.</p>':'')+`<div class="card"><h2>Registrar ventas del día</h2>${addForm('venta','Guardar venta')}<p class="hint" style="margin:8px 0 0">Ingresa lo del cierre de caja. Si tienes dos turnos, registra cada uno. Las propinas no cuentan como ingreso. Si cuentas el efectivo al cierre, anótalo y verás el descuadre.</p></div>
-  <div class="card"><h2>Ventas de ${mesLabel(ui.mes)}</h2>${rows.length?`<div class="tw"><table><thead><tr><th>Fecha</th><th class="n">Efectivo</th><th class="n">Tarjeta</th><th class="n">Transf.</th><th class="n">Apps</th><th class="n">Total</th><th class="n">Propinas</th><th class="n">Cuentas</th><th class="n">Caja</th><th></th></tr></thead><tbody>${rows.map(v=>{
+  ${catsAdminCard()}${catsResumenCard(c)}<div class="card"><h2>Ventas de ${mesLabel(ui.mes)}</h2>${rows.length?`<div class="tw"><table><thead><tr><th>Fecha</th><th class="n">Efectivo</th><th class="n">Tarjeta</th><th class="n">Transf.</th><th class="n">Apps</th><th class="n">Total</th><th class="n">Propinas</th><th class="n">Cuentas</th><th class="n">Caja</th><th></th></tr></thead><tbody>${rows.map(v=>{
     const t=num(v.efectivo)+num(v.tarjeta)+num(v.transf)+num(v.apps),has=v.contado!==''&&v.contado!=null,d=has?num(v.contado)-num(v.efectivo):0;
-    return `<tr><td>${fdate(v.fecha)}${v.nota?`<div class="hint">${esc(v.nota)}</div>`:''}</td><td class="n">${fmt(v.efectivo)}</td><td class="n">${fmt(v.tarjeta)}</td><td class="n">${fmt(v.transf)}</td><td class="n">${fmt(v.apps)}</td><td class="n"><b>${fmt(t)}</b></td><td class="n">${fmt(v.propinas)}</td><td class="n">${v.tickets||''}</td><td class="n">${!has?'<span class="mute">—</span>':Math.round(d)===0?'<span class="badge b-good">Cuadra</span>':`<span class="badge ${d<0?'b-bad':'b-warn'}">${d<0?'Falta ':'Sobra '}${fmt(Math.abs(d))}</span>`}</td><td class="n">${acts('venta',v.id)}</td></tr>`}).join('')}</tbody>
+    return `<tr><td>${fdate(v.fecha)}${v.nota?`<div class="hint">${esc(v.nota)}</div>`:''}${catsChips(v)}</td><td class="n">${fmt(v.efectivo)}</td><td class="n">${fmt(v.tarjeta)}</td><td class="n">${fmt(v.transf)}</td><td class="n">${fmt(v.apps)}</td><td class="n"><b>${fmt(t)}</b></td><td class="n">${fmt(v.propinas)}</td><td class="n">${v.tickets||''}</td><td class="n">${!has?'<span class="mute">—</span>':Math.round(d)===0?'<span class="badge b-good">Cuadra</span>':`<span class="badge ${d<0?'b-bad':'b-warn'}">${d<0?'Falta ':'Sobra '}${fmt(Math.abs(d))}</span>`}</td><td class="n">${acts('venta',v.id)}</td></tr>`}).join('')}</tbody>
     <tfoot><tr><td>Total</td><td class="n">${fmt(c.efectivo)}</td><td class="n">${fmt(c.tarjeta)}</td><td class="n">${fmt(c.transf)}</td><td class="n">${fmt(c.apps)}</td><td class="n">${fmt(c.bruto)}</td><td class="n">${fmt(c.propinas)}</td><td class="n">${c.tickets||''}</td><td></td><td></td></tr></tfoot></table></div>
     <p class="hint">Ventas netas (sin impuesto al consumo): <b>${fmt(c.neta)}</b>${c.tickets?` · Ticket promedio: <b>${fmt(c.bruto/c.tickets)}</b>`:''}</p>`:'<div class="empty">Aún no hay ventas este mes.</div>'}</div>`;
 }
@@ -658,9 +697,12 @@ function render(){quitaBoot();
 function go(){document.body.classList.remove('nav-open');const h=location.hash.slice(1);const ok=VIEWS[h]&&navList().some(n=>n[0]===h);ui.view=ok?h:(isCaj()?(navList()[0]||['ventas'])[0]:'panel');render();window.scrollTo(0,0)}
 
 /* ============ Acciones ============ */
-function collect(kind,f){const o={};for(const [n,,t] of SCH[kind]){const el=f.elements[n];if(!el)continue;let v=el.value.trim?el.value.trim():el.value;if(t==='money'||t==='int')v=v===''?'':Number(v);o[n]=v}return o}
+function collect(kind,f){const o={};for(const [n,,t] of SCH[kind]){const el=f.elements[n];if(!el)continue;let v=el.value.trim?el.value.trim():el.value;if(t==='money'||t==='int')v=v===''?'':Number(v);o[n]=v}
+  if(kind==='venta'&&f.querySelector('[name^="cat_"]')){const cats={};catsV().forEach(c=>{const el=f.elements['cat_'+c.id];if(el&&el.value!==''&&Number(el.value)>0)cats[c.id]=Number(el.value)});o.cats=cats}
+  return o}
 function validate(kind,o){
   if(kind==='venta'&&!(num(o.efectivo)+num(o.tarjeta)+num(o.transf)+num(o.apps)>0))return 'Ingresa al menos un valor de venta.';
+  if(kind==='venta'&&o.cats){const tot=num(o.efectivo)+num(o.tarjeta)+num(o.transf)+num(o.apps),rp=Object.values(o.cats).reduce((a,b)=>a+b,0);if(rp>tot+0.5)return 'El reparto por tipo de comida ('+fmt(rp)+') supera el total de la venta ('+fmt(tot)+').'}
   if(kind==='gasto'&&!(num(o.monto)>0))return 'El monto debe ser mayor a 0.';
   if(kind==='empleado'&&(!o.nombre||!(num(o.salario)>0)))return 'Nombre y salario son obligatorios.';
   if(kind==='insumo'&&(!o.nombre||o.costo===''))return 'Nombre y costo son obligatorios.';
@@ -703,6 +745,7 @@ function openDlg(html){$('#dlgBody').innerHTML=html;$('#dlg').showModal()}
 function openEdit(kind,id){
   const it=S[COLL[kind]].find(x=>x.id===id);
   openDlg(`<h2>Editar ${NAME[kind]}</h2><form class="two" data-form="edit:${kind}:${id}">${fields(kind,it)}<div class="row" style="margin-top:6px"><button class="btn">Guardar</button><button type="button" class="btn sec" data-act="close">Cancelar</button></div></form>`);
+  if(kind==='venta'){const f=$('#dlgBody form');if(f)catsResto(f)}
 }
 function openPlato(id){
   if(!S.insumos.length){toast('Primero agrega insumos (ingredientes).');return}
@@ -778,6 +821,9 @@ const ACT={
   edit:(id,k)=>openEdit(k,id),
   editPlato:(id)=>openPlato(id),
   close:()=>$('#dlg').close(),
+  renCatV:(id)=>{const c=catsV().find(x=>x.id===id);if(!c)return;const n=(prompt('Nuevo nombre para "'+c.n+'":',c.n)||'').trim();if(!n)return;c.n=n.slice(0,40);save();render()},
+  delCatV:(id)=>{const c=catsV().find(x=>x.id===id);if(!c||!confirm('¿Quitar "'+c.n+'"? Las ventas ya registradas conservan su reparto, pero aparecerá como "(categoría eliminada)".'))return;S.cfg.catsVenta=catsV().filter(x=>x.id!==id);save();render()},
+  sugCatV:()=>{const base=['Desayunos','Almuerzos','Pollo','Carnes','Pescados y mariscos','Sopas','Comida rápida','Bebidas','Postres'];S.cfg.catsVenta=catsV().concat(base.filter(n=>!catsV().some(x=>x.n===n)).map(n=>({id:uid(),n})));save();render();toast('Categorías agregadas ✔')},
   revokeApp:(grupo)=>{const a=oauthApps.find(x=>x.grupo===grupo);if(!a||!confirm('¿Quitar el acceso de "'+a.cliente+'"? Dejará de funcionar de inmediato.'))return;sb.rpc('oauth_revocar',{p_grupo:grupo}).then(({error})=>{if(error){toast('No se pudo: '+error.message);return}oauthApps=oauthApps.filter(x=>x.grupo!==grupo);render();toast('Acceso quitado')})},
   copyText:(id)=>{const el=document.getElementById(id);if(!el)return;const t=el.textContent;(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('Copiado ✔')).catch(()=>{const r=document.createRange();r.selectNodeContents(el);const se=getSelection();se.removeAllRanges();se.addRange(r);toast('Selecciónalo y pulsa Ctrl+C')})},
   revokeKey:(id)=>{const k=apiKeys.find(x=>x.id===id);if(!k)return;const v=!k.revocada;if(v&&!confirm('¿Revocar la clave "'+k.nombre+'"? Dejará de funcionar de inmediato.'))return;sb.from('api_keys').update({revocada:v}).eq('id',id).then(({error})=>{if(error){toast('No se pudo: '+error.message);return}k.revocada=v;render();toast(v?'Clave revocada':'Clave reactivada')})},
@@ -840,7 +886,8 @@ async function crearClave(nombre,permiso){
   <div class="row"><button class="btn" data-act="close">Listo, ya la guardé</button></div></div>`);
   render();
 }
-document.addEventListener('submit',e=>{const kf=e.target.closest('#keyForm');if(kf){e.preventDefault();const nombre=kf.elements.nombre.value.trim(),permiso=kf.elements.permiso.value;if(!nombre)return;const b=kf.querySelector('[type=submit]');b.disabled=true;crearClave(nombre,permiso).catch(er=>toast('No se pudo crear la clave: '+(er.message||er))).finally(()=>{b.disabled=false});return}
+document.addEventListener('submit',e=>{const cf=e.target.closest('#catVForm');if(cf){e.preventDefault();const n=cf.elements.n.value.trim().slice(0,40);if(!n)return;if(catsV().some(x=>x.n.toLowerCase()===n.toLowerCase())){toast('Ya existe esa categoría');return}if(catsV().length>=30){toast('Máximo 30 categorías');return}S.cfg.catsVenta=catsV().concat([{id:uid(),n}]);save();render();toast('Categoría agregada ✔');return}
+  const kf=e.target.closest('#keyForm');if(kf){e.preventDefault();const nombre=kf.elements.nombre.value.trim(),permiso=kf.elements.permiso.value;if(!nombre)return;const b=kf.querySelector('[type=submit]');b.disabled=true;crearClave(nombre,permiso).catch(er=>toast('No se pudo crear la clave: '+(er.message||er))).finally(()=>{b.disabled=false});return}
   const iv=e.target.closest('#invForm');if(iv){e.preventDefault();const email=iv.elements.email.value.trim().toLowerCase(),rol=iv.elements.rol.value;if(!email)return;if(perfiles.some(x=>(x.email||'').toLowerCase()===email)){toast('Ese correo ya está en tu equipo');return}const b=iv.querySelector('[type=submit]');b.disabled=true;const cks=[...iv.querySelectorAll('input[name=isec]')],sel=cks.filter(i=>i.checked).map(i=>i.value),conSec=rol==='cajero'&&cks.length>0;if(conSec&&!sel.length){toast('Elige al menos una herramienta');b.disabled=false;return}
     const fila={email,rol};if(conSec)fila.secciones=sel;
     sb.from('invitaciones').insert(fila).then(({error})=>{b.disabled=false;if(error){toast(/duplicate|unique/i.test(error.message)?'Ya invitaste a ese correo':'No se pudo invitar: '+error.message);return}invitaciones.push(fila);render();toast('Invitación lista. Dile que cree su cuenta con ese correo ✔')});return}
@@ -873,7 +920,7 @@ document.addEventListener('change',e=>{
   }
   if(t.closest('#dlgBody'))platoCalcUpdate();
 });
-document.addEventListener('input',e=>{if(e.target.closest('#dlgBody'))platoCalcUpdate()});
+document.addEventListener('input',e=>{if(e.target.closest('#dlgBody'))platoCalcUpdate();const f=e.target.closest&&e.target.closest('form[data-form]');if(f&&/^(add|edit):venta/.test(f.dataset.form))catsResto(f)});
 window.addEventListener('hashchange',go);
 
 /* ============ Asistente ============ */
