@@ -1,0 +1,1 @@
+/* @supabase/supabase-js 2.45.4 (MIT) - copia local para no depender de una CDN externa */
