@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Control Financiero · Restaurante Sul</title>
+<title>Control Financiero · Restaurante</title>
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Restaurante Sul">
+<meta name="apple-mobile-web-app-title" content="Restaurante">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
 <style>
@@ -142,11 +142,11 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 </style>
 </head>
 <body>
-<div id="boot" style="position:fixed;inset:0;display:grid;place-items:center;text-align:center;padding:24px;background:var(--bg);color:var(--ink);z-index:200;font:600 16px system-ui,sans-serif">Cargando Restaurante Sul…</div>
+<div id="boot" style="position:fixed;inset:0;display:grid;place-items:center;text-align:center;padding:24px;background:var(--bg);color:var(--ink);z-index:200;font:600 16px system-ui,sans-serif">Cargando Restaurante…</div>
 <script>addEventListener("error",function(e){var b=document.getElementById("boot");if(b){b.innerHTML="<div>Ocurrió un error al cargar la app.<br><small style='font-weight:400;opacity:.7'>"+String(e.message||e.target&&e.target.src||"")+"</small><br><br>Recarga con <b>Ctrl + Shift + R</b>. Si sigue igual, avísale al administrador.</div>"}},true)</script>
 <div id="app">
   <aside id="side">
-    <div class="brand-row"><span class="brand-ic" id="bic">R</span><span class="brand-t"><b id="rname">Restaurante Sul</b><small>Restaurante &amp; finanzas</small></span></div>
+    <div class="brand-row"><span class="brand-ic" id="bic">R</span><span class="brand-t"><b id="rname">Restaurante</b><small>Control financiero</small></span></div>
     <nav id="nav"></nav>
     <div class="who" id="who" hidden></div>
   </aside>
@@ -157,7 +157,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 <button id="fab2" data-act="ai" aria-label="Asistente"></button>
 <button id="fab3" data-act="idea" aria-label="Buzón de ideas" hidden></button>
 <aside id="ai" hidden aria-label="Asistente financiero"><div class="ai-head"><span>Asistente<small>Pregúntale a tus números</small></span><button class="tbtn" data-act="aiClose" aria-label="Cerrar" style="width:36px;height:36px">✕</button></div><div id="aiMsgs"></div><div id="aiChips"></div><form id="aiForm" autocomplete="off"><input id="aiIn" type="text" maxlength="500" placeholder="Escribe tu pregunta…" aria-label="Pregunta"><button aria-label="Enviar" id="aiSend"></button></form></aside>
-<div id="auth" hidden><div class="box"><div class="logo" style="padding:0"><span id="aname">Restaurante Sul</span><small>Control financiero</small></div><div id="authBody"></div></div></div>
+<div id="auth" hidden><div class="box"><div class="logo" style="padding:0"><span id="aname">Restaurante</span><small>Control financiero</small></div><div id="authBody"></div></div></div>
 <dialog id="dlg"><div class="modal" id="dlgBody"></div></dialog>
 <div id="toast" role="status"></div>
 
@@ -302,7 +302,7 @@ const CATS=[
  ['marketing','Publicidad y redes','fijo',0],['mant','Mantenimiento y reparaciones','fijo',0],
  ['impuestos','Impuestos, licencias y contador','fijo',0],['financiero','Créditos y gastos financieros','fijo',0],['otros','Otros','var',0]];
 const CAT=Object.fromEntries(CATS.map(c=>[c[0],{id:c[0],n:c[1],t:c[2],cogs:!!c[3]}]));
-const CFG0={nombre:'Restaurante Sul',moneda:'COP',inc:8,incIncluido:true,comApps:0,comTarjeta:0,metaFood:32,metaMargen:10,carga:50};
+const CFG0={nombre:'Restaurante',moneda:'COP',inc:8,incIncluido:true,comApps:0,comTarjeta:0,metaFood:32,metaMargen:10,carga:50};
 const COLL={venta:'ventas',gasto:'gastos',empleado:'empleados',insumo:'insumos',recurrente:'recurrentes',plato:'platos'};
 const NAME={venta:'venta',gasto:'gasto',empleado:'empleado',insumo:'insumo',recurrente:'gasto fijo',plato:'plato'};
 const METODOS=['Efectivo','Transferencia','Tarjeta','Crédito con proveedor','Otro'];
@@ -933,7 +933,7 @@ async function refreshCloud(silent){
   if(!silent||before!==after){render();if(!silent)toast('Datos actualizados ✔')}
 }
 const quitaBoot=()=>{const e=document.getElementById('boot');if(e)e.remove()};
-function authScreen(html){quitaBoot();$('#aname').textContent=AC.NOMBRE||'Restaurante Sul';$('#authBody').innerHTML=html;$('#auth').hidden=false;$('#app').hidden=true}
+function authScreen(html){quitaBoot();$('#aname').textContent=AC.NOMBRE||'Restaurante';$('#authBody').innerHTML=html;$('#auth').hidden=false;$('#app').hidden=true}
 function showLogin(msg='',mode='in'){
   authScreen(`<form id="authForm"><label>Correo<input type="email" name="email" required autocomplete="username"></label><label>Contraseña${mode==='up'?' (mínimo 8 caracteres)':''}<input type="password" name="pass" required minlength="${mode==='up'?8:1}" autocomplete="${mode==='up'?'new-password':'current-password'}"></label><div class="err" id="aerr">${esc(msg)}</div><button class="btn">${mode==='up'?'Crear cuenta':'Entrar'}</button></form><p class="hint" style="margin:10px 0 0;text-align:center">o</p><button class="btn sec" type="button" id="gBtn" style="width:100%">Continuar con Google</button><p class="hint" style="margin:8px 0 0">${mode==='up'?'¿Ya tienes cuenta? <a href="#" id="swAuth">Entrar</a>':'¿Primera vez? <a href="#" id="swAuth">Crear cuenta</a>. Tu acceso lo aprueba el dueño.'}</p>`);
   $('#swAuth').onclick=e=>{e.preventDefault();showLogin('',mode==='up'?'in':'up')};

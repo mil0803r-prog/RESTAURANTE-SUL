@@ -1,7 +1,7 @@
 {
-  "name": "Restaurante Sul · Control financiero",
-  "short_name": "Restaurante Sul",
-  "description": "Control financiero del Restaurante Sul",
+  "name": "Restaurante · Control financiero",
+  "short_name": "Restaurante",
+  "description": "Control financiero del Restaurante",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
