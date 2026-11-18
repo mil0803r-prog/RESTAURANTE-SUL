@@ -1,0 +1,4 @@
+{
+  "buildCommand": "node scripts/migrar.js",
+  "outputDirectory": "public"
+}

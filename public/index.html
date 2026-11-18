@@ -996,7 +996,7 @@ function showLogin(msg='',mode='in'){
 async function enter(session){
   USER=session.user;
   const {data:pf,error}=await sb.from('perfiles').select('rol,secciones').eq('id',USER.id).maybeSingle();
-  if(error||!pf){authScreen(`<p>No se pudo leer tu perfil. ¿Ejecutaste el archivo <b>schema.sql</b> en Supabase?</p><p class="hint">${esc(error?error.message:'Perfil no encontrado')}</p><button class="btn sec" id="so">Salir</button>`);$('#so').onclick=()=>sb.auth.signOut().then(()=>location.reload());return}
+  if(error||!pf){authScreen(`<p>No se pudo leer tu perfil. La base de datos puede estar actualizándose: espera un minuto y vuelve a intentar.</p><p class="hint">${esc(error?error.message:'Perfil no encontrado')}</p><button class="btn sec" id="so">Salir</button>`);$('#so').onclick=()=>sb.auth.signOut().then(()=>location.reload());return}
   ROL=pf.rol==='dueno'?'dueno':pf.rol==='cajero'?'cajero':'pendiente';SEC=secDe(pf);
   if(ROL==='pendiente'){authScreen(`<h2 style="margin-top:14px">Esperando aprobación</h2><p>Tu cuenta (${esc(USER.email)}) fue creada. El dueño debe darte acceso desde <b>Ajustes → Quién puede entrar</b>. Vuelve a abrir esta página cuando te avise.</p><div class="row"><button class="btn" id="rt">Revisar de nuevo</button><button class="btn sec" id="so">Salir</button></div>`);$('#rt').onclick=()=>enter(session);$('#so').onclick=()=>sb.auth.signOut().then(()=>location.reload());return}
   try{await loadAll()}catch(e){authScreen(`<p>No se pudieron cargar los datos.</p><p class="hint">${esc(e.message||e)}</p><button class="btn sec" id="so">Salir</button>`);$('#so').onclick=()=>sb.auth.signOut().then(()=>location.reload());return}

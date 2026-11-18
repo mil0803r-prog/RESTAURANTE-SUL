@@ -47,6 +47,6 @@ claude mcp add --transport http restaurante https://TU-DOMINIO/api/mcp \
 ```
 Sirve con cualquier cliente MCP que permita enviar un encabezado `Authorization`. Los conectores personalizados de claude.ai que exigen inicio de sesión OAuth todavía no son compatibles.
 
-## 4. Instalación (una sola vez)
-Ejecuta `migracion-api.sql` en Supabase → SQL Editor (después de `migracion-multiusuario.sql`).
+## 4. Instalación
+Nada que instalar: la base de datos se actualiza sola al publicar (ver `ACTUALIZACIONES.md`).
 La API usa por defecto la URL y la clave pública de Supabase de `config.js`; opcionalmente se pueden fijar con las variables de entorno de Vercel `SUPABASE_URL` y `SUPABASE_ANON_KEY`.

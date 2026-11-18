@@ -1,5 +1,5 @@
 // Utilidades compartidas de la API y del MCP (la carpeta _lib no se publica como ruta).
-// La seguridad vive en la base de datos: cada clave solo ve los datos de su negocio (ver migracion-api.sql).
+// La seguridad vive en la base de datos: cada clave solo ve los datos de su negocio (ver migraciones/004_api.sql).
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://wgjehfpwhxmefhnabrts.supabase.co';
 // La "anon key" es pública por diseño (también está en config.js). Sola no da acceso a nada.
