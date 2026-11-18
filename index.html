@@ -333,6 +333,11 @@ function blank(){return{cfg:{...CFG0},ventas:[],gastos:[],insumos:[],platos:[],e
 function load(){try{const r=JSON.parse(localStorage.getItem(LS));if(r)return Object.assign(blank(),r,{cfg:Object.assign({},CFG0,r.cfg)})}catch(e){}return blank()}
 const AC=window.APP_CONFIG||{};
 const CLOUD=!!(AC.SUPABASE_URL&&AC.SUPABASE_ANON_KEY);
+/* Novedades en prueba: cada actualización nueva se programa así: if(feat('clave')){ ...novedad... }
+   y se registra en la tabla "funciones" como Beta. Solo el administrador la ve hasta que pulsa "Habilitar para todos". */
+let ADMIN=false,FEATS=[];
+const feat=k=>FEATS.some(f=>f.clave===k&&(f.estado==='publicada'||ADMIN));
+const betaTag=k=>ADMIN&&FEATS.some(f=>f.clave===k&&f.estado==='beta')?' <span class="badge b-info">Beta</span>':'';
 let ROL='dueno',perfiles=[],ideas=[],invitaciones=[],sb=null,USER=null,SEC=['ventas','gastos'];
 const SECS=[['panel','Panel'],['ventas','Ventas'],['gastos','Gastos'],['pagar','Por pagar'],['reportes','Reportes'],['costeo','Costeo de platos'],['equipo','Nómina y fijos']];
 const secDe=p=>Array.isArray(p.secciones)?p.secciones:['ventas','gastos'];
@@ -600,6 +605,8 @@ function vAjustes(){
   <div class="tw"><table><tbody>${perfiles.map(p=>`<tr><td>${esc(p.email)}${p.id===USER?.id?' <span class="badge b-info">Tú</span>':''}</td><td class="n">${p.id===USER?.id?'Dueño':`<select class="rolsel" data-perfil="${p.id}"><option value="cajero"${p.rol==='cajero'?' selected':''}>Cajero</option><option value="dueno"${p.rol==='dueno'?' selected':''}>Dueño</option></select>`}</td><td class="n">${(p.id===USER?.id&&!perfiles.some(x=>x.rol==='dueno'&&x.id!==USER.id))?'':`<button class="btn sec" data-act="delperfil" data-id="${p.id}" title="Quitar este correo">🗑 Eliminar</button>`}</td></tr>${p.rol==='cajero'?`<tr class="secrow"><td colspan="3"><div class="secs"><span>Secciones a las que entra:</span>${SECS.map(([k,n])=>`<label><input type="checkbox" data-sec="${p.id}" value="${k}"${secDe(p).includes(k)?' checked':''}>${n}</label>`).join('')}</div><p class="hint" style="margin:4px 0 8px">Ventas y Gastos: puede registrar. Las demás secciones las ve solo en lectura. Ajustes es siempre solo del dueño.</p></td></tr>`:''}`).join('')}</tbody></table></div></div>`:''}
   ${CLOUD&&!isCaj()?`<div class="card"><h2>💡 Ideas y sugerencias</h2><p class="hint" style="margin-top:0">Lo que tú y tu equipo piden agregar con el botón flotante <b>Ideas</b>.</p>
   ${ideas.length?ideas.map(i=>`<div class="idea${i.hecha?' hecha':''}"><div><div class="it">${esc(i.texto)}</div><small>${esc(i.autor||'')} · ${fdate((i.creado||'').slice(0,10))}</small></div><div class="row"><button class="btn sec sm" data-act="ideaHecha" data-id="${i.id}">${i.hecha?'↩ Reabrir':'✔ Hecha'}</button><button class="btn sec sm" data-act="ideaDel" data-id="${i.id}" title="Borrar">🗑</button></div></div>`).join(''):'<p class="hint">Aún no hay ideas. Cuando alguien envíe una, aparece aquí.</p>'}</div>`:''}
+  ${CLOUD&&ADMIN?`<div class="card"><h2>🧪 Novedades en prueba</h2><p class="hint" style="margin-top:0">Solo tú (administrador) ves lo que está en <b>Beta</b>. Pruébalo y, cuando esté bien, pulsa <b>Habilitar para todos</b>. Si algo falla, <b>Volver a Beta</b> lo oculta de nuevo.</p>
+  ${FEATS.length?FEATS.map(f=>`<div class="idea"><div><div class="it" style="text-decoration:none;opacity:1"><b>${esc(f.titulo)}</b> ${f.estado==='beta'?'<span class="badge b-warn">Beta · solo tú</span>':'<span class="badge b-good">Activa para todos</span>'}</div><small>${esc(f.descripcion||'')}</small></div><div class="row"><button class="btn ${f.estado==='beta'?'':'sec'} sm" data-act="toggleFeat" data-id="${esc(f.clave)}">${f.estado==='beta'?'Habilitar para todos':'Volver a Beta'}</button></div></div>`).join(''):'<p class="hint">Aún no hay novedades registradas.</p>'}</div>`:''}
   <div class="card"><h2>Respaldo de tu información</h2><p style="margin-top:0">${CLOUD?'Tus datos ya están en la nube. Aun así, descarga un respaldo de vez en cuando como copia extra.':'Tus datos se guardan en <b>este navegador de este computador</b>. Descarga un respaldo cada semana y guárdalo en OneDrive o enviado por correo.'}</p>
    <div class="row"><button class="btn" data-act="backup">Descargar respaldo</button><label class="btn sec" style="cursor:pointer">Restaurar respaldo<input type="file" id="restore" accept="application/json" hidden></label></div>
    <p class="hint">Último respaldo: ${S.lastBackup?new Date(S.lastBackup).toLocaleString('es'):'nunca'}</p></div>
@@ -759,6 +766,9 @@ const ACT={
   edit:(id,k)=>openEdit(k,id),
   editPlato:(id)=>openPlato(id),
   close:()=>$('#dlg').close(),
+  toggleFeat:(clave)=>{const f=FEATS.find(x=>x.clave===clave);if(!f)return;const nuevo=f.estado==='beta'?'publicada':'beta';
+    if(nuevo==='publicada'&&!confirm('¿Habilitar "'+f.titulo+'" para TODOS los correos?'))return;
+    sb.from('funciones').update({estado:nuevo,publicado:nuevo==='publicada'?new Date().toISOString():null}).eq('clave',clave).then(({error})=>{if(error){toast('No se pudo cambiar: '+error.message);return}f.estado=nuevo;render();toast(nuevo==='publicada'?'Habilitada para todos ✔':'De vuelta a Beta')})},
   delInv:(email)=>{sb.from('invitaciones').delete().eq('email',email).then(({error})=>{if(error){toast('No se pudo quitar: '+error.message);return}invitaciones=invitaciones.filter(x=>x.email!==email);render();toast('Invitación quitada')})},
   idea:()=>openDlg(`<form id="ideaForm" class="f" style="display:grid;gap:12px;padding:20px"><h2 style="margin:0">💡 ¿Qué quieres que agreguemos?</h2><p class="hint" style="margin:0">Escribe todo lo que se te ocurra. Queda guardado para el dueño.</p><textarea name="texto" rows="5" maxlength="1000" required placeholder="Ej: que se pueda imprimir el cierre del día…" style="padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);width:100%;resize:vertical"></textarea><div class="row"><button class="btn" type="submit">Enviar idea</button><button class="btn sec" type="button" data-act="close">Cancelar</button></div></form>`),
   ideaHecha:(id)=>{const i=ideas.find(x=>x.id===id);if(!i)return;sb.from('ideas').update({hecha:!i.hecha}).eq('id',id).then(({error})=>{if(error){toast('No se pudo: '+error.message);return}i.hecha=!i.hecha;render()})},
@@ -927,6 +937,7 @@ async function loadAll(){
   const {data:aj,error}=await sb.from('ajustes').select('key,data');if(error)throw error;
   (aj||[]).forEach(a=>{if(a.key==='cfg')next.cfg=Object.assign({},CFG0,a.data);if(a.key==='inv')next.inv=a.data});
   if(!isCaj()){const {data:pf}=await sb.from('perfiles').select('*').order('creado');perfiles=pf||[];const {data:id}=await sb.from('ideas').select('*').order('creado',{ascending:false});ideas=id||[];const {data:iv}=await sb.from('invitaciones').select('*').order('creado');invitaciones=iv||[]}
+  try{const {data:ad}=await sb.rpc('es_admin');ADMIN=ad===true;const {data:fn}=await sb.from('funciones').select('*').order('creado');FEATS=fn||[]}catch(e){ADMIN=false;FEATS=[]}
   S=next;takeSnap();
 }
 async function refreshCloud(silent){
