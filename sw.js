@@ -1,6 +1,6 @@
 // Service worker: acelera la app guardando archivos estáticos. Los datos (Supabase/API) siempre van directo a internet.
-const V = 'rsul-v2';
-const SHELL = ['./', 'config.js', 'manifest.webmanifest', 'icons/icon-192.png'];
+const V = 'rsul-v3';
+const SHELL = ['./', 'config.js', 'manifest.webmanifest', 'icons/icon-192.png', 'vendor/supabase.js'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(V).then(c => c.addAll(SHELL)).catch(() => {})); self.skipWaiting(); });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== V).map(k => caches.delete(k)))).then(() => self.clients.claim()));
@@ -16,7 +16,7 @@ self.addEventListener('fetch', e => {
   }
   // Íconos, fuentes y librerías: primero caché (carga instantánea)
   e.respondWith(caches.match(r).then(m => m || fetch(r).then(res => {
-    if (res.ok || res.type === 'opaque') { const cp = res.clone(); caches.open(V).then(c => c.put(r, cp)); }
+    if (res.ok && res.type === 'basic') { const cp = res.clone(); caches.open(V).then(c => c.put(r, cp)); }
     return res;
   })));
 });

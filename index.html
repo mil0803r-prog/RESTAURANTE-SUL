@@ -12,7 +12,7 @@
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Restaurante Sul">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
 <style>
 :root{
@@ -142,6 +142,8 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 </style>
 </head>
 <body>
+<div id="boot" style="position:fixed;inset:0;display:grid;place-items:center;text-align:center;padding:24px;background:var(--bg);color:var(--ink);z-index:200;font:600 16px system-ui,sans-serif">Cargando Restaurante Sul…</div>
+<script>addEventListener("error",function(e){var b=document.getElementById("boot");if(b){b.innerHTML="<div>Ocurrió un error al cargar la app.<br><small style='font-weight:400;opacity:.7'>"+String(e.message||e.target&&e.target.src||"")+"</small><br><br>Recarga con <b>Ctrl + Shift + R</b>. Si sigue igual, avísale al administrador.</div>"}},true)</script>
 <div id="app">
   <aside id="side">
     <div class="brand-row"><span class="brand-ic" id="bic">R</span><span class="brand-t"><b id="rname">Restaurante Sul</b><small>Restaurante &amp; finanzas</small></span></div>
@@ -288,7 +290,7 @@ body.ro #view form,body.ro #view [data-act="pagar"],body.ro #view [data-act="edi
 </style>
 <script src="config.js"></script>
 <script>if("serviceWorker"in navigator&&location.protocol.startsWith("http"))addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))</script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="vendor/supabase.js"></script>
 <script>
 'use strict';
 /* ============ Datos y utilidades ============ */
@@ -616,7 +618,7 @@ function whoHTML(){
   if(!CLOUD)return '';
   return `<div><b>${esc(USER?.email||'')}</b><br>${isCaj()?'Cajero':'Dueño'}</div><div class="row"><button class="btn sec sm" data-act="refresh">↻ Actualizar</button><button class="btn sec sm" data-act="logout">Salir</button></div>`;
 }
-function render(){
+function render(){quitaBoot();
   const w=$('#who');w.hidden=!CLOUD;w.innerHTML=whoHTML();
   let last='';
   $('#nav').innerHTML=navList().map(n=>{const lab=n[3]!==last&&!isCaj()?`<div class="nav-label">${n[3]}</div>`:'';last=n[3];return `${lab}<a href="#${n[0]}" class="${ui.view===n[0]?'on':''}"><span class="ic">${ico(n[2])}</span>${n[1]}</a>`}).join('');
@@ -930,7 +932,8 @@ async function refreshCloud(silent){
   const after=jstr([S.ventas,S.gastos,S.insumos,S.platos,S.empleados,S.recurrentes,S.cfg,S.inv]);
   if(!silent||before!==after){render();if(!silent)toast('Datos actualizados ✔')}
 }
-function authScreen(html){$('#aname').textContent=AC.NOMBRE||'Restaurante Sul';$('#authBody').innerHTML=html;$('#auth').hidden=false;$('#app').hidden=true}
+const quitaBoot=()=>{const e=document.getElementById('boot');if(e)e.remove()};
+function authScreen(html){quitaBoot();$('#aname').textContent=AC.NOMBRE||'Restaurante Sul';$('#authBody').innerHTML=html;$('#auth').hidden=false;$('#app').hidden=true}
 function showLogin(msg='',mode='in'){
   authScreen(`<form id="authForm"><label>Correo<input type="email" name="email" required autocomplete="username"></label><label>Contraseña${mode==='up'?' (mínimo 8 caracteres)':''}<input type="password" name="pass" required minlength="${mode==='up'?8:1}" autocomplete="${mode==='up'?'new-password':'current-password'}"></label><div class="err" id="aerr">${esc(msg)}</div><button class="btn">${mode==='up'?'Crear cuenta':'Entrar'}</button></form><p class="hint" style="margin:10px 0 0;text-align:center">o</p><button class="btn sec" type="button" id="gBtn" style="width:100%">Continuar con Google</button><p class="hint" style="margin:8px 0 0">${mode==='up'?'¿Ya tienes cuenta? <a href="#" id="swAuth">Entrar</a>':'¿Primera vez? <a href="#" id="swAuth">Crear cuenta</a>. Tu acceso lo aprueba el dueño.'}</p>`);
   $('#swAuth').onclick=e=>{e.preventDefault();showLogin('',mode==='up'?'in':'up')};
