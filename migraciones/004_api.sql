@@ -1,7 +1,6 @@
 -- ============================================================================
 -- API y MCP: claves por negocio. Cada clave solo ve y escribe los datos de SU negocio.
--- Ejecutar UNA vez (se puede repetir sin problema). Requiere haber corrido antes
--- migracion-multiusuario.sql.
+-- Se aplica sola al publicar (ver docs/ACTUALIZACIONES.md).
 -- La clave real nunca se guarda: solo su huella (hash). Se muestra una sola vez al crearla.
 -- ============================================================================
 

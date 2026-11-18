@@ -2,7 +2,7 @@
 -- NOVEDADES EN PRUEBA: cada actualización llega primero SOLO al administrador
 -- (milstoreonline38@gmail.com) como "Beta". Cuando la pruebe, pulsa
 -- "Habilitar para todos" en Ajustes → Novedades y la ven todos los correos.
--- Se ejecuta UNA vez (se puede repetir sin problema).
+-- Se aplica sola al publicar (ver docs/ACTUALIZACIONES.md).
 -- ============================================================================
 
 -- ¿Quién es el administrador? Se mira el correo REAL de la cuenta (auth.users),

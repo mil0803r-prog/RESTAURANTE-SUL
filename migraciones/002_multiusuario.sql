@@ -1,6 +1,6 @@
 -- ============================================================================
 -- MULTIUSUARIO: cada correo tiene su propio negocio y no ve nada de los demás.
--- Se ejecuta UNA vez (sirve tanto para una base nueva como para la que ya usas).
+-- Se aplica sola al publicar (ver docs/ACTUALIZACIONES.md). Sirve para una base nueva y para la que ya usas.
 -- Quien se registra queda como DUEÑO de su propio espacio vacío.
 -- El dueño puede INVITAR correos (cajero o dueño) a su mismo negocio.
 -- Los datos que ya existen quedan con el dueño principal (milstoreonline38@gmail.com).

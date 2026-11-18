@@ -1,0 +1,14 @@
+{
+  "name": "restaurante",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Control financiero del restaurante (Supabase + Vercel)",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "node scripts/migrar.js",
+    "migrar": "node scripts/migrar.js"
+  },
+  "dependencies": {
+    "pg": "^8.13.0"
+  }
+}
