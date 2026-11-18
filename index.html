@@ -336,6 +336,9 @@ const CLOUD=!!(AC.SUPABASE_URL&&AC.SUPABASE_ANON_KEY);
 /* Novedades en prueba: cada actualización nueva se programa así: if(feat('clave')){ ...novedad... }
    y se registra en la tabla "funciones" como Beta. Solo el administrador la ve hasta que pulsa "Habilitar para todos". */
 let ADMIN=false,FEATS=[];
+/* Novedades que se registran SOLAS como Beta cuando el administrador abre la app (no hace falta SQL).
+   Formato: {clave:'cierre_caja',titulo:'Cierre de caja',descripcion:'Qué hace'} */
+const NOVEDADES=[];
 const feat=k=>FEATS.some(f=>f.clave===k&&(f.estado==='publicada'||ADMIN));
 const betaTag=k=>ADMIN&&FEATS.some(f=>f.clave===k&&f.estado==='beta')?' <span class="badge b-info">Beta</span>':'';
 let ROL='dueno',perfiles=[],ideas=[],invitaciones=[],sb=null,USER=null,SEC=['ventas','gastos'];
@@ -937,7 +940,10 @@ async function loadAll(){
   const {data:aj,error}=await sb.from('ajustes').select('key,data');if(error)throw error;
   (aj||[]).forEach(a=>{if(a.key==='cfg')next.cfg=Object.assign({},CFG0,a.data);if(a.key==='inv')next.inv=a.data});
   if(!isCaj()){const {data:pf}=await sb.from('perfiles').select('*').order('creado');perfiles=pf||[];const {data:id}=await sb.from('ideas').select('*').order('creado',{ascending:false});ideas=id||[];const {data:iv}=await sb.from('invitaciones').select('*').order('creado');invitaciones=iv||[]}
-  try{const {data:ad}=await sb.rpc('es_admin');ADMIN=ad===true;const {data:fn}=await sb.from('funciones').select('*').order('creado');FEATS=fn||[]}catch(e){ADMIN=false;FEATS=[]}
+  try{const {data:ad}=await sb.rpc('es_admin');ADMIN=ad===true;const {data:fn}=await sb.from('funciones').select('*').order('creado');FEATS=fn||[];
+    if(ADMIN){const nuevas=NOVEDADES.filter(n=>!FEATS.some(f=>f.clave===n.clave)).map(n=>({clave:n.clave,titulo:n.titulo,descripcion:n.descripcion||'',estado:'beta'}));
+      if(nuevas.length){const {error:e2}=await sb.from('funciones').insert(nuevas);if(!e2)FEATS=FEATS.concat(nuevas)}}
+  }catch(e){ADMIN=false;FEATS=[]}
   S=next;takeSnap();
 }
 async function refreshCloud(silent){
