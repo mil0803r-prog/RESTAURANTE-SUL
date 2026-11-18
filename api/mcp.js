@@ -73,7 +73,12 @@ async function atender(msg, key) {
 module.exports = async (req, res) => {
   cors(res);
   if (req.method === 'OPTIONS') return res.status(204).end();
-  if (req.method !== 'POST') { res.setHeader('Allow', 'POST, OPTIONS'); return res.status(405).json({ error: 'Usa POST (MCP por HTTP).' }); }
+  if (req.method !== 'POST') {
+    // Sin credenciales, cualquier método responde 401 con la ubicación del inicio de sesión (así los clientes
+    // como ChatGPT descubren el OAuth aunque sondeen primero con GET). Con credenciales: solo se admite POST.
+    if (!claveDe(req)) { exigirLogin(req, res); return res.status(401).json({ jsonrpc: '2.0', id: null, error: { code: -32001, message: 'Inicia sesión (OAuth) o envía una clave de API (Authorization: Bearer ...)' } }); }
+    res.setHeader('Allow', 'POST, OPTIONS'); return res.status(405).json({ error: 'Usa POST (MCP por HTTP).' });
+  }
   try {
     const key = claveDe(req);
     if (!key) { exigirLogin(req, res); return res.status(401).json({ jsonrpc: '2.0', id: null, error: { code: -32001, message: 'Falta la clave de API (Authorization: Bearer rsk_...)' } }); }
