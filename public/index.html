@@ -462,6 +462,7 @@ function field(kind,[n,l,t,opts],v){
   return `<label>${l}<input type="text" name="${n}" value="${esc(val)}" autocomplete="off"></label>`;
 }
 const catsV=()=>Array.isArray(S.cfg.catsVenta)?S.cfg.catsVenta:[];
+const CATS_SUG=['Menú básico','Chifa','Desayunos','Almuerzos','Pollo','Carnes','Pescados y mariscos','Sopas','Comida rápida','Bebidas','Postres'];
 const catsOn=()=>feat('ventas_categorias')&&catsV().length>0;
 function catsFields(v){
   if(!catsOn())return '';
@@ -548,7 +549,7 @@ function catsAdminCard(){
   return `<div class="card"><h2>Tipos de comida${betaTag('ventas_categorias')}</h2><p class="hint" style="margin-top:0">Crea tus categorías (Pollo, Carnes, Pescados, Bebidas, Postres…). Al registrar una venta podrás repartir cuánto vendiste de cada una, y abajo verás cuál vende más.</p>
   <div class="row" style="flex-wrap:wrap;gap:8px;margin-bottom:10px">${L.length?L.map(c=>`<span class="catchip">${esc(c.n)}<button class="lnk" data-act="renCatV" data-id="${esc(c.id)}" title="Renombrar">✏</button><button class="lnk" data-act="delCatV" data-id="${esc(c.id)}" title="Quitar">✕</button></span>`).join(''):'<span class="hint">Aún no tienes categorías.</span>'}</div>
   <form id="catVForm" class="row" style="gap:8px"><input name="n" required maxlength="40" placeholder="Nueva categoría (ej: Pollo)" style="flex:1;min-width:200px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)"><button class="btn" type="submit">Agregar</button></form>
-  ${L.length?'':'<button class="btn sec sm" data-act="sugCatV" style="margin-top:8px">Agregar las más comunes</button>'}</div>`;
+  ${(()=>{const f=CATS_SUG.filter(n=>!L.some(x=>x.n.toLowerCase()===n.toLowerCase()));return f.length?`<div class="row" style="flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center"><span class="hint" style="margin:0">Sugeridas (un clic para agregar):</span>${f.map(n=>`<button class="btn sec sm" type="button" data-act="addSugCatV" data-id="${esc(n)}">+ ${esc(n)}</button>`).join('')}${L.length?'':'<button class="btn sm" type="button" data-act="sugCatV">Agregar todas</button>'}</div>`:''})()}</div>`;
 }
 function catsResumenCard(c){
   if(isCaj()||!feat('ventas_categorias')||!catsV().length)return '';
@@ -823,7 +824,8 @@ const ACT={
   close:()=>$('#dlg').close(),
   renCatV:(id)=>{const c=catsV().find(x=>x.id===id);if(!c)return;const n=(prompt('Nuevo nombre para "'+c.n+'":',c.n)||'').trim();if(!n)return;c.n=n.slice(0,40);save();render()},
   delCatV:(id)=>{const c=catsV().find(x=>x.id===id);if(!c||!confirm('¿Quitar "'+c.n+'"? Las ventas ya registradas conservan su reparto, pero aparecerá como "(categoría eliminada)".'))return;S.cfg.catsVenta=catsV().filter(x=>x.id!==id);save();render()},
-  sugCatV:()=>{const base=['Desayunos','Almuerzos','Pollo','Carnes','Pescados y mariscos','Sopas','Comida rápida','Bebidas','Postres'];S.cfg.catsVenta=catsV().concat(base.filter(n=>!catsV().some(x=>x.n===n)).map(n=>({id:uid(),n})));save();render();toast('Categorías agregadas ✔')},
+  sugCatV:()=>{S.cfg.catsVenta=catsV().concat(CATS_SUG.filter(n=>!catsV().some(x=>x.n.toLowerCase()===n.toLowerCase())).map(n=>({id:uid(),n})));save();render();toast('Categorías agregadas ✔')},
+  addSugCatV:(n)=>{if(!n||catsV().some(x=>x.n.toLowerCase()===String(n).toLowerCase()))return;S.cfg.catsVenta=catsV().concat([{id:uid(),n:String(n).slice(0,40)}]);save();render();toast('Categoría "'+n+'" agregada ✔')},
   revokeApp:(grupo)=>{const a=oauthApps.find(x=>x.grupo===grupo);if(!a||!confirm('¿Quitar el acceso de "'+a.cliente+'"? Dejará de funcionar de inmediato.'))return;sb.rpc('oauth_revocar',{p_grupo:grupo}).then(({error})=>{if(error){toast('No se pudo: '+error.message);return}oauthApps=oauthApps.filter(x=>x.grupo!==grupo);render();toast('Acceso quitado')})},
   copyText:(id)=>{const el=document.getElementById(id);if(!el)return;const t=el.textContent;(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('Copiado ✔')).catch(()=>{const r=document.createRange();r.selectNodeContents(el);const se=getSelection();se.removeAllRanges();se.addRange(r);toast('Selecciónalo y pulsa Ctrl+C')})},
   revokeKey:(id)=>{const k=apiKeys.find(x=>x.id===id);if(!k)return;const v=!k.revocada;if(v&&!confirm('¿Revocar la clave "'+k.nombre+'"? Dejará de funcionar de inmediato.'))return;sb.from('api_keys').update({revocada:v}).eq('id',id).then(({error})=>{if(error){toast('No se pudo: '+error.message);return}k.revocada=v;render();toast(v?'Clave revocada':'Clave reactivada')})},
