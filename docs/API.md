@@ -37,7 +37,15 @@ curl -X POST https://TU-DOMINIO/api/v1/ventas \
 Errores: `401` clave inválida o ausente · `403` clave de solo lectura · `400` datos inválidos (el mensaje explica qué corregir).
 Las fechas por defecto usan la zona horaria de Bogotá. No se pueden registrar fechas de más de 1 año atrás.
 
-## 3. MCP  (`https://TU-DOMINIO/api/mcp`)
+## 3a. Conectar con inicio de sesión (ChatGPT, Claude… — sin copiar claves)
+1. En la app (ChatGPT → Ajustes → Conectores/Complementos → crear; Claude → Conectores personalizados) agrega un servidor MCP con la dirección `https://TU-DOMINIO/api/mcp` y autenticación **OAuth**.
+2. La app se registra sola y abre la pantalla **Permitir acceso** de tu restaurante. Si no tienes sesión iniciada, primero te lleva al login normal (Google o correo) y luego vuelve.
+3. Elige **Leer y registrar** o **Solo leer** y pulsa **Permitir acceso**. Solo el **dueño** del negocio puede autorizar.
+4. Para quitar el acceso: **Ajustes → Conexiones → Quitar acceso** (deja de funcionar al instante).
+
+Detalles técnicos: OAuth 2.1 con PKCE (S256), registro dinámico de clientes (`/oauth/register`), `/oauth/authorize`, `/oauth/token`, metadatos en `/.well-known/oauth-protected-resource` y `/.well-known/oauth-authorization-server`. Los tokens de acceso duran 1 hora y los de renovación 30 días (se rotan en cada uso; si se reutiliza uno ya usado, toda la autorización se revoca). Nada se guarda en texto: solo la huella (SHA-256).
+
+## 3b. MCP  (`https://TU-DOMINIO/api/mcp`)
 Servidor MCP por HTTP (sin estado). Herramientas: `resumen_mes`, `listar_ventas`, `listar_gastos`, `listar_platos`, `listar_insumos`, `registrar_venta`, `registrar_gasto` (las de registrar solo aparecen con una clave de escritura).
 
 **Claude Code:**
@@ -45,7 +53,7 @@ Servidor MCP por HTTP (sin estado). Herramientas: `resumen_mes`, `listar_ventas`
 claude mcp add --transport http restaurante https://TU-DOMINIO/api/mcp \
   --header "Authorization: Bearer rsk_..."
 ```
-Sirve con cualquier cliente MCP que permita enviar un encabezado `Authorization`. Los conectores personalizados de claude.ai que exigen inicio de sesión OAuth todavía no son compatibles.
+Sirve con cualquier cliente MCP que permita enviar un encabezado `Authorization`. Para ChatGPT y los conectores de claude.ai usa el inicio de sesión (sección 3a).
 
 ## 4. Instalación
 Nada que instalar: la base de datos se actualiza sola al publicar (ver `ACTUALIZACIONES.md`).

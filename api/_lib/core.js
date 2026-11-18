@@ -123,6 +123,14 @@ function cors(res) {
   res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-API-Key, Mcp-Session-Id, Mcp-Protocol-Version');
   res.setHeader('Cache-Control', 'no-store');
 }
+function origen(req) {
+  const h = req.headers || {};
+  return `${h['x-forwarded-proto'] || 'https'}://${h['x-forwarded-host'] || h.host || 'localhost'}`;
+}
+// Le dice al cliente (ChatGPT, Claude…) dónde iniciar sesión (OAuth)
+function exigirLogin(req, res) {
+  res.setHeader('WWW-Authenticate', `Bearer resource_metadata="${origen(req)}/.well-known/oauth-protected-resource"`);
+}
 function claveDe(req) {
   const h = req.headers || {};
   const a = String(h.authorization || '');
@@ -141,14 +149,14 @@ function endpoint(metodos, fn, { publico = false } = {}) {
     if (!metodos.includes(req.method)) { res.setHeader('Allow', metodos.join(', ')); return res.status(405).json({ error: 'Método no permitido.' }); }
     try {
       const key = claveDe(req);
-      if (!publico && !key) { res.setHeader('WWW-Authenticate', 'Bearer'); return res.status(401).json({ error: 'Falta la clave de API. Envíala como "Authorization: Bearer rsk_..."' }); }
+      if (!publico && !key) { exigirLogin(req, res); return res.status(401).json({ error: 'Falta la clave de API. Envíala como "Authorization: Bearer rsk_..."' }); }
       const data = await fn({ key, req });
       return res.status(200).json(data);
     } catch (e) {
-      if (e instanceof ApiError) { if (e.status === 401) res.setHeader('WWW-Authenticate', 'Bearer'); return res.status(e.status).json({ error: e.message }); }
+      if (e instanceof ApiError) { if (e.status === 401) exigirLogin(req, res); return res.status(e.status).json({ error: e.message }); }
       return res.status(500).json({ error: 'Error interno.' });
     }
   };
 }
 
-module.exports = { ApiError, rpc, ops, endpoint, cors, claveDe, cuerpo, resumen, mesActual };
+module.exports = { ApiError, rpc, ops, endpoint, cors, claveDe, cuerpo, resumen, mesActual, origen, exigirLogin };
